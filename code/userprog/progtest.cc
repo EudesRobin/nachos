@@ -87,9 +87,15 @@ ConsoleTest (char *in, char *out)
       {
 	  readAvail->P ();	// wait for character to arrive
 	  ch = console->GetChar ();
+	  #ifdef CHANGED
+	  console->PutChar ('<');
+	  writeDone->P ();
+	  #endif
 	  console->PutChar (ch);	// echo it!
 	  writeDone->P ();	// wait for write to finish
 	  #ifdef CHANGED
+	  console->PutChar ('>');
+	  writeDone->P ();
       if (ch == 'q'|| ch ==EOF || ch=='\0')
 	      return;		// if q, quit
       #endif
