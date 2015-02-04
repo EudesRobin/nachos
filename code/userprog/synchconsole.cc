@@ -4,6 +4,7 @@
 #include "system.h"
 #include "synchconsole.h"
 #include "synch.h"
+#include "console.h"
 
 static Semaphore *readAvail;
 static Semaphore *writeDone;
@@ -15,7 +16,7 @@ SynchConsole::SynchConsole(char *readFile, char *writeFile)
 {
 	readAvail = new Semaphore("read avail", 0);
 	writeDone = new Semaphore("write done", 0);
-	console = new Console (readFile, writeFile, readAvail, writeDone, 0);
+	console = new Console (readFile, writeFile, ReadAvail, WriteDone, 0);
 }
 
 SynchConsole::~SynchConsole()
