@@ -116,6 +116,11 @@ ExceptionHandler (ExceptionType which)
 				delete buffer;
 				break;
 			}
+			case SC_SynchGetChar:{
+				char c = synchconsole->SynchGetChar();
+				machine->WriteRegister (2,(int)c);	//On insère dans le registre 2 le caractère lu sur le terminal
+				break;
+			}
 			default:{
 				printf ("Unexpected user mode exception %d %d\n", which, type);
 				ASSERT (FALSE);

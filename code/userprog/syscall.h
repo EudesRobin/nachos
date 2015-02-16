@@ -33,6 +33,7 @@
 #ifdef CHANGED
 #define SC_PutChar		11
 #define SC_SynchPutString	12
+#define SC_SynchGetChar		13
 #endif //CHANGED
 
 #ifdef IN_USER_MODE
@@ -141,6 +142,10 @@ void PutChar(char c);
 /* Print the string c on the terminal
 */
 void SynchPutString(char *c);
+
+/* Get the character on the terminal
+*/
+char SynchGetChar();
 #endif //CHANGED
 
 #endif // IN_USER_MODE
