@@ -31,6 +31,13 @@ SynchDisk *synchDisk;
 Machine *machine;		// user program memory and registers
 #endif
 
+#ifdef CHANGED
+#ifdef USER_PROGRAM
+SynchConsole *synchconsole;
+#endif
+#endif
+
+
 #ifdef NETWORK
 PostOffice *postOffice;
 #endif
@@ -77,6 +84,11 @@ TimerInterruptHandler (int dummy)
 void
 Initialize (int argc, char **argv)
 {
+#ifdef CHANGED
+#ifdef USER_PROGRAM
+	synchconsole = new SynchConsole(NULL,NULL);
+#endif //USER_PROGRAM
+#endif //CHANGED
     int argCount;
     const char *debugArgs = "";
     bool randomYield = FALSE;
@@ -195,6 +207,10 @@ Cleanup ()
 #ifdef FILESYS
     delete synchDisk;
 #endif
+
+#ifdef CHANGED
+	delete synchconsole;
+#endif //CHANGED
 
     delete timer;
     delete scheduler;

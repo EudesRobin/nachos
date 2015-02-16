@@ -132,9 +132,11 @@ void Fork (void (*func) ());
  */
 void Yield ();
 
+#ifdef CHANGED
 /* Print the character c on the terminal
 */
 void PutChar(char c);
+#endif //CHANGED
 
 #endif // IN_USER_MODE
 

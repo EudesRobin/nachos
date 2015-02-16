@@ -67,8 +67,8 @@ UpdatePC ()
 void
 ExceptionHandler (ExceptionType which)
 {
-    int type = machine->ReadRegister (2);
-
+	int type = machine->ReadRegister (2);
+#ifndef CHANGED
     if ((which == SyscallException) && (type == SC_Halt))
       {
 	  DEBUG ('a', "Shutdown, initiated by user program.\n");
@@ -79,6 +79,30 @@ ExceptionHandler (ExceptionType which)
 	  printf ("Unexpected user mode exception %d %d\n", which, type);
 	  ASSERT (FALSE);
       }
+#else
+	if (which == SyscallException){
+		switch(type){
+			case SC_Halt:{
+				DEBUG ('a', "Shutdown, initiated by user program.\n");
+				interrupt->Halt ();
+				break;
+			}
+			case SC_PutChar:{
+				int c = machine->ReadRegister (4);	//Le caractère à insérer est dans le registre 4
+				synchconsole->SynchPutChar((char)c);	//On fait appel à PutChar de synchconsole
+				break;
+			}
+			default:{
+				printf ("Unexpected user mode exception %d %d\n", which, type);
+				ASSERT (FALSE);
+			}
+		}
+	}
+	else{
+		printf ("Unexpected user mode exception %d %d\n", which, type);
+		ASSERT (FALSE);
+	}
+#endif //CHANGED
 
     // LB: Do not forget to increment the pc before returning!
     UpdatePC ();
