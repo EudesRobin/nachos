@@ -42,8 +42,9 @@ void SynchConsole::SynchPutChar(const char ch)
 char SynchConsole::SynchGetChar()
 {
 	SemGetChar->P();
+	char ch;
 	readAvail->P ();	// wait for character to arrive
-	char ch = console->GetChar ();
+	ch = console->GetChar ();
 	SemGetChar->V();
 	return ch;
 }

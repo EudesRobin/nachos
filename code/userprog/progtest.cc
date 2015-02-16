@@ -98,13 +98,16 @@ ConsoleTest (char *in, char *out)
 	  #endif
 	  console->PutChar (ch);	// echo it!
 	  writeDone->P ();	// wait for write to finish
-	  #ifdef CHANGED
+	  #ifndef CHANGED
+	  if (ch == 'q'|| ch ==EOF || ch=='\0')
+		  return;	
+	  #else
 	  if(ch!='\n'){
 		  console->PutChar ('>');
 		  writeDone->P ();
 	  }
-      if (ch == 'q'|| ch ==EOF || ch=='\0')
-	      return;		// if q, quit
+	  if (ch == 'q'|| ch ==EOF || ch=='\0')
+		  return;		// if q, quit
       #endif
       }
 }
