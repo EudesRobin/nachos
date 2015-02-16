@@ -42,7 +42,7 @@ UpdatePC ()
 
 #ifdef CHANGED
 //----------------------------------------------------------------------
-// copyStringFromMachine : Used for PutString
+// copyStringFromMachine : Used for SynchPutString
 //----------------------------------------------------------------------
 void copyStringFromMachine( int from, char *to, unsigned size){
 	unsigned int i;
@@ -54,6 +54,21 @@ void copyStringFromMachine( int from, char *to, unsigned size){
 	if(tmp!='\0'){
 		to[size-1]='\0';
 	}
+}
+
+
+//----------------------------------------------------------------------
+// copyStringToMachine : Used for SynchGetString
+//----------------------------------------------------------------------
+void copyStringToMachine( char *from, int to, unsigned size){
+	unsigned int i;
+	int tmp;
+	for(i=0;i<size-1;i++){
+		tmp=from[i];
+		machine->WriteMem(to+i,1,tmp);
+	}
+	tmp='\0';
+	machine->WriteMem(to+i,1,tmp);
 }
 #endif
 
@@ -119,6 +134,15 @@ ExceptionHandler (ExceptionType which)
 			case SC_SynchGetChar:{
 				char c = synchconsole->SynchGetChar();
 				machine->WriteRegister (2,(int)c);	//On insère dans le registre 2 le caractère lu sur le terminal
+				break;
+			}
+			case SC_SynchGetString:{
+				char *buffer=new char[MAX_STRING_SIZE];
+				int s = machine->ReadRegister (4);
+				int size = machine->ReadRegister (5);
+				synchconsole->SynchGetString(buffer,size);
+				copyStringToMachine(buffer, s, size);
+				delete buffer;
 				break;
 			}
 			default:{

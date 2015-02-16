@@ -153,6 +153,14 @@ SynchGetChar:
 	j	$31
 	.end SynchGetChar
 	
+	.globl SynchGetString
+	.ent	SynchGetString
+SynchGetString:
+	addiu $2,$0,SC_SynchGetString
+	syscall
+	j	$31
+	.end SynchGetString
+	
 #endif //CHANGED
 
 /* dummy function to keep gcc happy */
