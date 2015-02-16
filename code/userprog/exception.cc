@@ -40,6 +40,22 @@ UpdatePC ()
     machine->WriteRegister (NextPCReg, pc);
 }
 
+#ifdef CHANGED
+//----------------------------------------------------------------------
+// copyStringFromMachine : Used for PutString
+//----------------------------------------------------------------------
+void copyStringFromMachine( int from, char *to, unsigned size){
+	unsigned int i;
+	int tmp;
+	for(i=0;i<size;i++){
+		if(machine->ReadMem(from+i,1,&tmp))
+		to[i]=tmp;
+	}
+	if(tmp!='\0'){
+		to[size-1]='\0';
+	}
+}
+#endif
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -90,6 +106,14 @@ ExceptionHandler (ExceptionType which)
 			case SC_PutChar:{
 				int c = machine->ReadRegister (4);	//Le caractère à insérer est dans le registre 4
 				synchconsole->SynchPutChar((char)c);	//On fait appel à PutChar de synchconsole
+				break;
+			}
+			case SC_SynchPutString:{
+				char *buffer=new char[MAX_STRING_SIZE];
+				int s = machine->ReadRegister (4);	//L'adresse du string à insérer est dans le registre 4
+				copyStringFromMachine(s, buffer, MAX_STRING_SIZE);
+				synchconsole->SynchPutString(buffer);	//On fait appel à SynchPutString de synchconsole
+				delete buffer;
 				break;
 			}
 			default:{

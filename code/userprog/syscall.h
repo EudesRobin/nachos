@@ -31,7 +31,8 @@
 #define SC_Yield	10
 
 #ifdef CHANGED
-#define SC_PutChar	11
+#define SC_PutChar		11
+#define SC_SynchPutString	12
 #endif //CHANGED
 
 #ifdef IN_USER_MODE
@@ -136,6 +137,10 @@ void Yield ();
 /* Print the character c on the terminal
 */
 void PutChar(char c);
+
+/* Print the string c on the terminal
+*/
+void SynchPutString(char *c);
 #endif //CHANGED
 
 #endif // IN_USER_MODE
