@@ -145,6 +145,16 @@ ExceptionHandler (ExceptionType which)
 				delete buffer;
 				break;
 			}
+			case SC_SynchPutInt:{
+				int n = machine->ReadRegister (4);	//L'entier à afficher est dans le registre 4
+				synchconsole->SynchPutInt(n);	//On fait appel à SynchPutInt de synchconsole
+				break;
+			}
+			case SC_SynchGetInt:{
+				int n = machine->ReadRegister (4);	//L'entier à afficher est dans le registre 4
+				synchconsole->SynchGetInt((int *)n);	//On fait appel à SynchPutInt de synchconsole
+				break;
+			}
 			default:{
 				printf ("Unexpected user mode exception %d %d\n", which, type);
 				ASSERT (FALSE);

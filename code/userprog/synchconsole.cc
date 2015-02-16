@@ -81,5 +81,24 @@ void SynchConsole::SynchGetString(char *s, int n)
 	SemGetString->V();
 }
 
+void SynchConsole::SynchPutInt(int n)
+{
+	char *s = new char(MAX_STRING_SIZE);
+	snprintf(s,MAX_STRING_SIZE,"%d",n);
+	synchconsole->SynchPutString(s);
+}
+
+void SynchConsole::SynchGetInt(int *n)
+{
+	int res;
+	//Les entiers ne peuvent pas avoir plus de 10 caractères, on songe également au \0 de fin
+	char *s = new char(12);
+	SynchGetString(s,12);
+	sscanf(s,"%d",&res);
+	//L'écriture se fait sur 4 octets
+	machine->WriteMem(*n,4,res);
+	delete s;
+}
+
 #endif // CHANGED
 

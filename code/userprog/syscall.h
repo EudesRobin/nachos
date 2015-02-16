@@ -35,6 +35,8 @@
 #define SC_SynchPutString	12
 #define SC_SynchGetChar		13
 #define SC_SynchGetString	14
+#define SC_SynchPutInt		15
+#define SC_SynchGetInt		16
 #endif //CHANGED
 
 #ifdef IN_USER_MODE
@@ -151,6 +153,14 @@ char SynchGetChar();
 /* Get the string on the terminal
 */
 void SynchGetString(char *s, int n);
+
+/* Print the integer n on the terminal
+*/
+void SynchPutInt(int n);
+
+/* Puts the integer on the terminal in n
+*/
+void SynchGetInt(int *n);
 #endif //CHANGED
 
 #endif // IN_USER_MODE
