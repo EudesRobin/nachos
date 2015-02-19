@@ -1,8 +1,12 @@
 #include "syscall.h"
 
-int main(){
+void putint(){
 	SynchPutInt(42);
 	PutChar('\n');
+ }
+
+int main(){
+	putint();
 	Halt();
 }
 

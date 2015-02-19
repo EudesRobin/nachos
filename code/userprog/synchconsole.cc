@@ -75,7 +75,7 @@ void SynchConsole::SynchGetString(char *s, int n)
 		if(c==EOF || c=='\n')
 			break;
 		else
-			s[i] = synchconsole->SynchGetChar ();
+			s[i] = c;
 	}
 	s[i]='\0';
 	SemGetString->V();
@@ -96,7 +96,7 @@ void SynchConsole::SynchGetInt(int *n)
 	SynchGetString(s,12);
 	sscanf(s,"%d",&res);
 	//L'écriture se fait sur 4 octets
-	machine->WriteMem(*n,4,res);
+	machine->WriteMem((int)n,4,res);
 	delete s;
 }
 
