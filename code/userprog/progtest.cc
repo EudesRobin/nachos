@@ -82,6 +82,7 @@ ConsoleTest (char *in, char *out)
 {
     char ch;
 
+    delete synchconsole;
     console = new Console (in, out, ReadAvail, WriteDone, 0);
     readAvail = new Semaphore ("read avail", 0);
     writeDone = new Semaphore ("write done", 0);
@@ -119,9 +120,11 @@ SynchConsoleTest (char *in, char *out)
 {
 	char ch;
 
+	delete synchconsole;
 	SynchConsole *synchconsoletest = new SynchConsole(in, out);
 
-	while ((ch = synchconsoletest->SynchGetChar()) != EOF){
+	while (('a') != EOF){
+ch = synchconsoletest->SynchGetChar();
 		if(ch!='\n'){
 			synchconsoletest->SynchPutChar('<');
 			synchconsoletest->SynchPutChar(ch);
