@@ -1,8 +1,8 @@
 #include "syscall.h"
 
 int main(){
-	char c = SynchGetChar();
-	PutChar(c);
+	int c = SynchGetChar();
+	PutChar((char)c);
 	PutChar('\n');
 	Halt();
 }

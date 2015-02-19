@@ -123,8 +123,7 @@ SynchConsoleTest (char *in, char *out)
 	delete synchconsole;
 	SynchConsole *synchconsoletest = new SynchConsole(in, out);
 
-	while (('a') != EOF){
-ch = synchconsoletest->SynchGetChar();
+	while ((ch = synchconsoletest->SynchGetChar()) != EOF){
 		if(ch!='\n'){
 			synchconsoletest->SynchPutChar('<');
 			synchconsoletest->SynchPutChar(ch);
