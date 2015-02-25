@@ -83,7 +83,7 @@ void SynchConsole::SynchGetString(char *s, int n)
 	int i;
 	for (i=0;i<n;i++){
 		c = synchconsole->SynchGetChar ();
-		if(c==EOF || c=='\n')
+		if(c==EOF)
 			break;
 		else
 			s[i] = c;
@@ -91,6 +91,7 @@ void SynchConsole::SynchGetString(char *s, int n)
 	s[i]='\0';
 	SemGetString->V();
 }
+
 /*
 void SynchConsole::SynchGetString(char *s, int n)
 {
@@ -108,7 +109,7 @@ void SynchConsole::SynchGetString(char *s, int n)
 		s[0] = c;
 	for (i=1;i<n;i++){
 		c = synchconsole->SynchGetChar ();
-		if(c=='\n')
+		if(c==EOF && s[i-1]=='\n')
 			break;
 		else{
 			if(c==EOF)
