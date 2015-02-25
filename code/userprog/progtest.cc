@@ -102,7 +102,7 @@ ConsoleTest (char *in, char *out)
 	  console->PutChar (ch);	// echo it!
 	  writeDone->P ();	// wait for write to finish
 	  #ifndef CHANGED
-	  if (ch == 'q'|| ch ==EOF || ch=='\0')
+	  if (ch == 'q')
 		  return;	
 	  #else
 	  if(ch!='\n'){
