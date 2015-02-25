@@ -1,7 +1,7 @@
 #include "syscall.h"
 
 int main(){
-	SynchPutString("bonjour\n");
+	SynchPutString("bon\127our\n");
 	Halt();
 }
 
