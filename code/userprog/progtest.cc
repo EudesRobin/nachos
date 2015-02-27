@@ -81,9 +81,8 @@ void
 ConsoleTest (char *in, char *out)
 {
     char ch;
-
     #ifdef CHANGED
-    delete synchconsole;
+    //char prec;
     #endif //CHANGED
     console = new Console (in, out, ReadAvail, WriteDone, 0);
     readAvail = new Semaphore ("read avail", 0);
@@ -109,8 +108,11 @@ ConsoleTest (char *in, char *out)
 		  console->PutChar ('>');
 		  writeDone->P ();
 	  }
-	  if (ch == 'q'|| ch ==EOF || ch=='\0')
+	
+	  //prec=ch;
+	  if (ch ==EOF || ch=='\0'){
 		  return;		// if q, quit
+	  }
       #endif
       }
 }
@@ -122,7 +124,6 @@ SynchConsoleTest (char *in, char *out)
 {
 	char ch;
 
-	delete synchconsole;
 	SynchConsole *synchconsoletest = new SynchConsole(in, out);
 
 	while ((ch = synchconsoletest->SynchGetChar()) != EOF){

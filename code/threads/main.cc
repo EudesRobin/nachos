@@ -100,6 +100,10 @@ main (int argc, char **argv)
 	  if (!strcmp (*argv, "-x"))
 	    {			// run a user program
 		ASSERT (argc > 1);
+#ifdef CHANGED
+        printf ("appel new synch console\n") ;
+	synchconsole = new SynchConsole(NULL,NULL);
+#endif //CHANGED
 		StartProcess (*(argv + 1));
 		argCount = 2;
 	    }

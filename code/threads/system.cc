@@ -162,11 +162,7 @@ Initialize (int argc, char **argv)
     interrupt->Enable ();
     CallOnUserAbort (Cleanup);	// if user hits ctl-C
 
-#ifdef CHANGED
-#ifdef USER_PROGRAM
-	synchconsole = new SynchConsole(NULL,NULL);
-#endif //USER_PROGRAM
-#endif //CHANGED
+
 
 #ifdef USER_PROGRAM
     machine = new Machine (debugUserProg);	// this must come first
@@ -199,6 +195,9 @@ Cleanup ()
 
 #ifdef USER_PROGRAM
     delete machine;
+#ifdef CHANGED
+    delete synchconsole;
+#endif //CHANGED
 #endif
 
 #ifdef FILESYS_NEEDED
@@ -209,9 +208,6 @@ Cleanup ()
     delete synchDisk;
 #endif
 
-#ifdef CHANGED
-    delete synchconsole;
-#endif //CHANGED
 
     delete timer;
     delete scheduler;
