@@ -37,6 +37,8 @@
 #define SC_SynchGetString	14
 #define SC_SynchPutInt		15
 #define SC_SynchGetInt		16
+#define SC_UserThreadCreate	17
+#define SC_UserThreadExit	18
 #endif //CHANGED
 
 #ifdef IN_USER_MODE
@@ -161,6 +163,15 @@ void SynchPutInt(int n);
 /* Puts the integer on the terminal in n
 */
 void SynchGetInt(int *n);
+
+/* Create the thread starting the function f with the arguments arg
+*/
+int UserThreadCreate(void f(void *arg), void *arg);
+
+/* Exit the thread
+*/
+void UserThreadExit();
+
 #endif //CHANGED
 
 #endif // IN_USER_MODE
