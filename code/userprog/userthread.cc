@@ -8,14 +8,18 @@
 static void StartUserThread(int f){
 	argThread *argt = (argThread *) f;
 
+	/*
+	//Save old registers
+	SaveState();
 	//Clean registers
-	int i;
-	for (i = 0; i < NumTotalRegs; i++)
-		machine->WriteRegister (i,0);
+	InitRegisters();
+	*/
 
 	machine->WriteRegister (PCReg,argt->func);
 	machine->WriteRegister (NextPCReg,(argt->func)+4);
 	machine->WriteRegister (4,argt->argv);
+
+	machine->Run();
 
 	//TODO
 }
@@ -40,6 +44,6 @@ int do_UserThreadExit(){
 	return 0;
 }
 
-//stackreg(bitmap), run
+//stackreg(bitmap)
 
 #endif // CHANGED
