@@ -13,7 +13,7 @@ int do_UserThreadCreate(int f, int arg){
 	argThread->func = f;
 	argThread->argv = argt;
 	
-	t->Fork(StartUserThread,(VoidFunctionPtr)f,argt);
+	t->Fork(StartUserThread,argt);
 
 	//TODO
 
@@ -21,7 +21,11 @@ int do_UserThreadCreate(int f, int arg){
 }
 
 static void StartUserThread(int f){
-	
+	argThread argt = (argThread) f;
+	machine->WriteRegister (PCReg,f->func);
+	machine->WriteRegister (4,f->argv);
+
+	//TODO
 }
 
 int do_UserThreadExit(){
