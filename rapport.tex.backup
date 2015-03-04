@@ -35,6 +35,68 @@ A l'exécution de putchar.c, on s'attends à avoir le retour suivant :
  [...] # retour du syscall halt
 \end{verbatim}
 \subsection{Partie II : Entrées-sorties asynchrones}
+\subsubsection{Observation de progtest.cc}
+\begin{verbatim}
+ ./nachos-userprog -c
+test
+test # retour de la console
+arret si on tape sur q et rien ensuite
+arret si on tape sur qMachine halting! # retour de la console
+[...]
+\end{verbatim}
+La console se ferme sur la lecture du caractère ``q'' , et ignore tout ce qu'on a put saisir ensuite. (\#Action II.1)
 
+\subsubsection{ Modifications de progtest.cc}
+
+Trace d'exécution :
+
+
+\begin{verbatim}
+ $ ./nachos-step2 -c
+test
+<t><e><s><t>
+
+
+test<t><e><s>< # test suivi de ^D
+t> # dernier caractère qui s'affiche après entréé
+Machine halting! # ^D en debut de ligne bien pris en compte
+
+\end{verbatim}
+
+Après quelques modifications, la terminaison de la console s'effectue sur fin de fichier ou, sur un tty, \^D en début de ligne.
+Cependant, nous notons un léger disfonctionement suite à nos modifications : lorsque l'on effectue un \^D en fin de ligne, le dernier caractère tapé ne sera pas affiché
+avant que l'on appuie sur entrée. Ce problème se manifeste uniquement dans ce cas, nous pensons à un soucis de buffer. (\#Action II.2)
+
+Par ailleurs, on peut observer que chaque caractère est bien encadré de < > . ( \# Action II.3)
+
+Le test avec un fichier d'entrée et de sortie fonctionne correctement. ( \#Action II.4)
+\newpage
+\subsection{Entrées-sorties synchrones}
+Nous allons maintenant dévelloper une console synchrone. Dans un premier temps, nous copions un squelette fourni. (\#Action III.1)
+
+Ensuite, les fonctions de manipulations des caractères sont complétées :
+\begin{verbatim}
+ void SynchConsole::SynchPutChar(const char ch)
+{
+  SemPutChar->P();
+  console->PutChar (ch);
+  writeDone->P (); // wait for write to finish
+  SemPutChar->V();
+}
+
+char SynchConsole::SynchGetChar()
+{
+  SemGetChar->P();
+  char ch;
+  readAvail->P (); // wait for character to arrive
+  ch = console->GetChar ();
+  SemGetChar->V();
+  return ch;
+}
+
+\end{verbatim}
+
+La manipulation de String n'est rien de plus qu'une itération d'appels aux fonctions de manipulation des char,
+après tout, une string n'est qu'une suite de caractères. (\#Action III.2 )
 
 \end{document}
