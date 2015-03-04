@@ -43,17 +43,6 @@ void SynchConsole::SynchPutChar(const char ch)
 	SemPutChar->V();
 }
 
-/*
-int SynchConsole::SynchGetChar()
-{
-	SemGetChar->P();
-	int ch;
-	readAvail->P ();	// wait for character to arrive
-	ch = (int)console->GetChar ();
-	SemGetChar->V();
-	return ch;
-}*/
-
 char SynchConsole::SynchGetChar()
 {
 	SemGetChar->P();
@@ -75,7 +64,7 @@ void SynchConsole::SynchPutString(const char s[])
 	}
 	SemPutString->V();
 }
-
+/*
 void SynchConsole::SynchGetString(char *s, int n)
 {
 	SemGetString->P();
@@ -90,9 +79,9 @@ void SynchConsole::SynchGetString(char *s, int n)
 	}
 	s[i]='\0';
 	SemGetString->V();
-}
+}*/
 
-/*
+
 void SynchConsole::SynchGetString(char *s, int n)
 {
 	SemGetString->P();
@@ -121,7 +110,7 @@ void SynchConsole::SynchGetString(char *s, int n)
 	s[i]='\0';
 	SemGetString->V();
 }
-*/
+
 
 void SynchConsole::SynchPutInt(int n)
 {
