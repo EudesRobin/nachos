@@ -8,14 +8,23 @@
 int do_UserThreadCreate(int f, int arg){
 	Thread t = new Thread("UserThread");
 
-	if(t==NULL){
-		return -1;
-	}
+	argThread argt = new argThread;
 
-	t->Fork((VoidFunctionPtr)f,arg);
+	argThread->func = f;
+	argThread->argv = argt;
+	
+	t->Fork(StartUserThread,(VoidFunctionPtr)f,argt);
 
 	//TODO
 
+	return 0;
+}
+
+static void StartUserThread(int f){
+	
+}
+
+int do_UserThreadExit(){
 	return 0;
 }
 

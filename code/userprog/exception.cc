@@ -163,7 +163,7 @@ ExceptionHandler (ExceptionType which)
 				break;
 			}
 			case SC_UserThreadExit:{
-				//do_UserThreadExit();	//On quitte le thread
+				do_UserThreadExit();	//On quitte le thread
 				break;
 			}
 			default:{
