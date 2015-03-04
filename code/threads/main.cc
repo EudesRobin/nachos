@@ -101,7 +101,6 @@ main (int argc, char **argv)
 	    {			// run a user program
 		ASSERT (argc > 1);
 #ifdef CHANGED
-        printf ("appel new synch console\n") ;
 	synchconsole = new SynchConsole(NULL,NULL);
 #endif //CHANGED
 		StartProcess (*(argv + 1));
