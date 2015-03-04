@@ -1,0 +1,59 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\setlength{\textwidth}{16cm}
+\setlength{\marginparwidth}{0cm}
+\setlength{\oddsidemargin}{0cm}
+\setlength{\headheight}{0cm}
+\setlength{\topmargin}{0cm}
+\setlength{\headsep}{0cm}
+\setlength{\textheight}{25cm}
+\setlength{\footskip}{0cm}
+\setlength{\marginparsep}{0cm}
+\lstset{basicstyle=\small\ttfamily,breaklines=true}
+
+%opening
+\title{Compte Rendu TP NACHOS}
+\author{EUDES Robin, ROSSI Ombeline, BADAMO Romain, MORISON Jack}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+\section{Etape 2}
+\subsection{Partie I : Introduction}
+A l'exécution de putchar.c, on s'attends à avoir le retour suivant :
+\begin{verbatim}
+ $ ./nachos -x ./putchar
+ abcd
+ [...] # retour du syscall halt
+\end{verbatim}
+\subsection{Partie II : Entrées-sorties asynchrones}
+\subsubsection{Observation de progtest.cc}
+\begin{verbatim}
+ ./nachos-userprog -c
+test
+test # retour de la console
+arret si on tape sur q et rien ensuite
+arret si on tape sur qMachine halting! # retour de la console
+[...]
+\end{verbatim}
+La console se ferme sur la lecture du caractère ``q'' , et ignore tout ce qu'on a put saisir ensuite.
+
+\subsubsection{ Modification de progtest.cc}
+\begin{verbatim}
+#ifdef CHANGED
+  if (ch == 'q'|| ch ==EOF || ch=='\0')
+  return;
+#endif
+\end{verbatim}
+Cette modification sur le test d'arrêt de la console suffit à prendre en compte la terminaison de l’entrée correc-
+tement : fin de fichier ou, sur un tty, \^D .
+
+\end{document}
