@@ -81,9 +81,6 @@ void
 ConsoleTest (char *in, char *out)
 {
     char ch;
-    #ifdef CHANGED
-    //char prec;
-    #endif //CHANGED
     console = new Console (in, out, ReadAvail, WriteDone, 0);
     readAvail = new Semaphore ("read avail", 0);
     writeDone = new Semaphore ("write done", 0);
@@ -93,25 +90,30 @@ ConsoleTest (char *in, char *out)
 	  readAvail->P ();	// wait for character to arrive
 	  ch = console->GetChar ();
 	  #ifdef CHANGED
-	  if(ch!='\n'){
+	  if(ch!='\n' && ch!=EOF){
 		  console->PutChar ('<');
 		  writeDone->P ();
 	  }
 	  #endif
+	  #ifndef CHANGED
 	  console->PutChar (ch);	// echo it!
 	  writeDone->P ();	// wait for write to finish
-	  #ifndef CHANGED
 	  if (ch == 'q')
 		  return;	
 	  #else
-	  if(ch!='\n'){
-		  console->PutChar ('>');
-		  writeDone->P ();
+	  if(ch!=EOF){
+		  console->PutChar (ch);	// echo it!
+		  writeDone->P ();	// wait for write to finish
+		  if(ch!='\n'){
+			  console->PutChar ('>');
+			  writeDone->P ();
+		  }
 	  }
-	
-	  //prec=ch;
-	  if (ch ==EOF || ch=='\0'){
-		  return;		// if q, quit
+	  else{
+		return;
+	  }
+	  if (ch=='\0'){
+		  return;
 	  }
       #endif
       }
