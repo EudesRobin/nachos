@@ -5,28 +5,30 @@
 #include "addrspace.h"
 #include "system.h"
 
+static void StartUserThread(int f){
+	argThread *argt = (argThread *) f;
+	machine->WriteRegister (PCReg,argt->func);
+	machine->WriteRegister (NextPCReg,argt->func+4);
+	machine->WriteRegister (4,argt->argv);
+
+	//TODO
+}
+
 int do_UserThreadCreate(int f, int arg){
-	Thread t = new Thread("UserThread");
+	Thread *t = new Thread("UserThread");
 
-	argThread argt = new argThread;
+	argThread *argt = new argThread;
 
-	argThread->func = f;
-	argThread->argv = argt;
+	argt->func = f;
+	argt->argv = arg;
 	
-	t->Fork(StartUserThread,argt);
+	t->Fork(StartUserThread,(int)argt);
 
 	//TODO
 
 	return 0;
 }
 
-static void StartUserThread(int f){
-	argThread argt = (argThread) f;
-	machine->WriteRegister (PCReg,f->func);
-	machine->WriteRegister (4,f->argv);
-
-	//TODO
-}
 
 int do_UserThreadExit(){
 	return 0;
