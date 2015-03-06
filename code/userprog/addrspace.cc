@@ -192,6 +192,10 @@ AddrSpace::AllocStack ()
 	return tmp;
 }
 
+
+//Changer ces méthodes pour que l'entier en émission et réception soit au bon format d'adresse (* ou / pagesize)
+
+
 //----------------------------------------------------------------------
 // AddrSpace::FreeStack
 //      If the position numPile is set, clear it in the pile.
