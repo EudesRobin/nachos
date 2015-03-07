@@ -53,7 +53,7 @@ class AddrSpace
 
 	#ifdef CHANGED
 	BitMap *stack;
-	int nbThreads;
+	static int nbThreads;
 	#endif //CHANGED
 
 };

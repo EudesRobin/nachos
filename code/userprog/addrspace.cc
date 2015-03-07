@@ -23,8 +23,8 @@
 #include <strings.h>		/* for bzero */
 
 #ifdef CHANGED
-static bool askEnd;
-static Semaphore *BlockMultiThread;
+static bool askEnd=false;
+static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);;
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -93,8 +93,6 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	#ifdef CHANGED
 	//Stack initially set
 	stack = new BitMap(numPages);
-	BlockMultiThread = new Semaphore("BlockMultiThread",0);
-	askEnd=false;
 	nbThreads=0;
 	#endif //CHANGED
 
@@ -257,6 +255,7 @@ AddrSpace::CheckLastThread ()
 	if(nbThreads!=0){
 		askEnd=true;
 		BlockMultiThread->P();
+		askEnd=false;
 	}
 	printf("End CheckLastThread\n");
 }
