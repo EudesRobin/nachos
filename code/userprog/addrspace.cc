@@ -24,7 +24,7 @@
 
 #ifdef CHANGED
 static bool askEnd=false;
-static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);;
+static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
 #endif //CHANGED
 
 //----------------------------------------------------------------------
