@@ -19,15 +19,31 @@
 \lstset{basicstyle=\small\ttfamily,breaklines=true}
 
 %opening
-\title{Compte Rendu TP NACHOS}
-\author{EUDES Robin, ROSSI Ombeline, BADAMO Romain, MORISON Jack}
+\title{Compte Rendu \\ NACHOS}
+\author{EUDES Robin, ROSSI Ombeline, BARTHELEMY Romain, MORISON Jack}
 
 \begin{document}
 \maketitle
 \tableofcontents
 \newpage
-\section{Etape 2}
-\subsection{Partie I : Introduction}
+\section{Introduction}
+Ce projet a été réalisé dans le cadre de notre 4ème année d'étude à Polytech, avec la spécialisation ``systèmes et réseaux''.
+En réalisant ce projet, nous avons put mettre en pratique l'ensemble des connaissances engrangés au cours de nos parcours et ainsi
+comprendre les concepts entrant en jeu lors de la réalisation d'un système d'exploitation.
+\vspace{0.5cm}
+
+Dans un premier temps, nous allons nous intéresser
+à la gestion de l'affichage de chaines de caractères de façon synchrone par le système. Nous allons également nous intéresser à la mise en place
+d'un appel système (syscall). Par la suite, nous nous interesserons à la gestion des threads utilisateur, au multithreading.
+\newpage
+\section{Étape 2}
+\subsection{Entrées-sorties asynchrones}
+\subsection{Entrées-sorties synchrones}
+\subsection{Le syscall PutChar}
+\subsection{La fonction SynchPutString}
+\subsection{Le syscall Halt}
+\subsection{Les Fonctions de lecture/écriture}
+\subsection{Jeu de test}
 A l'exécution de putchar.c, on s'attends à avoir le retour suivant :
 \begin{verbatim}
  $ ./nachos -x ./putchar
@@ -97,6 +113,16 @@ char SynchConsole::SynchGetChar()
 \end{verbatim}
 
 La manipulation de String n'est rien de plus qu'une itération d'appels aux fonctions de manipulation des char,
-après tout, une string n'est qu'une suite de caractères. (\#Action III.2 )
+après tout, une string n'est qu'une suite de caractères.
+Explications du fonctionnement sur PutChar :
+
+Dans un premier temps, on prend le sémaphore afin d'assurer qu'un seul caractère est traité à la fois (section critique).
+L'opération ``put'' est ensuite effectuée. On attend que le write se termine pour libérer le sémaphore de la section critique,
+grâce à un second sémaphore (writeDone), qui sera libéré l'écriture effectuée.
+
+On retrouve ce principe sur la fonction getchar.
+
+Par ailleurs, on peut observer quelques subtilitées dans la fonction getString, afin de conserver un fonctionnement cohérent :
+prise en compte du \^D uniquement en début de ligne, entre autres. (\#Action III.2 )
 
 \end{document}

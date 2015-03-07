@@ -1,0 +1,6 @@
+*.aux
+*.tex.backup
+*.log
+*.toc
+
+

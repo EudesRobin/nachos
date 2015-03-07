@@ -17,17 +17,93 @@
 \setlength{\footskip}{0cm}
 \setlength{\marginparsep}{0cm}
 \lstset{basicstyle=\small\ttfamily,breaklines=true}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\lstset{language=c++,basicstyle=\small\ttfamily,keywordstyle=\color{blue}\ttfamily,stringstyle=\color{red}\ttfamily,commentstyle=\color{green}\ttfamily,breaklines=true}
+
 
 %opening
-\title{Compte Rendu TP NACHOS}
-\author{EUDES Robin, ROSSI Ombeline, BADAMO Romain, MORISON Jack}
+\title{Compte Rendu \\ NACHOS}
+\author{EUDES Robin, ROSSI Ombeline, BARTHELEMY Romain, MORISON Jack}
 
 \begin{document}
 \maketitle
 \tableofcontents
 \newpage
-\section{Etape 2}
-\subsection{Partie I : Introduction}
+\section{Introduction}
+Ce projet a été réalisé dans le cadre de notre 4ème année d'étude à Polytech, avec la spécialisation ``systèmes et réseaux''.
+En réalisant ce projet, nous avons put mettre en pratique l'ensemble des connaissances engrangés au cours de nos parcours et ainsi
+comprendre les concepts entrant en jeu lors de la réalisation d'un système d'exploitation.
+\vspace{0.5cm}
+
+Dans un premier temps, nous allons nous intéresser
+à la gestion de l'affichage de chaines de caractères de façon synchrone par le système. Nous allons également nous intéresser à la mise en place
+d'un appel système (syscall). Par la suite, nous nous interesserons à la gestion des threads utilisateur, au multithreading.
+\newpage
+\section{Étape 2}
+\subsection{Entrées-sorties asynchrones}
+Une version élémentaire de gestion des entrées-sorties nous est fournie par NachOS, au travers de la classe \textit{Console}. Le code fournit
+effectue une  gestion asynchrone des entrées-sorties. Nous devons donc gérer la synchronisation grâce à deux sémaphores ( pour gérer l'écriture et la lecture )
+ainsi que deux handlers. Ceux-ci libèreront le sémaphore et nous informeront de la fin de l'opération de lecture/écriture. Ainsi, la synchronisation est assurée
+par ce mécanisme.
+
+Voici un extrait de code permetant cette gestion des entrées/sorties. Si le caractère est EOF, la machine s'arrête : syscall Halt() :
+\begin{lstlisting}[frame=single]
+void ConsoleTest (char *in, char *out) {
+    char ch;
+    console = new Console (in, out, ReadAvail, WriteDone, 0);
+    readAvail = new Semaphore ("read avail", 0);
+    writeDone = new Semaphore ("write done", 0);
+
+    for (;;) {
+	  readAvail->P (); // wait for character to arrive
+	  ch = console->GetChar ();
+	  
+	  #ifdef CHANGED
+	  if(ch!='\n' && ch!=EOF){
+		  console->PutChar ('<');
+		  writeDone->P ();
+	  }
+	  #endif
+	  
+	  // Original code
+	  #ifndef CHANGED 
+	  console->PutChar (ch);
+	  writeDone->P (); // wait for write to finish
+	  if (ch == 'q')
+		  return;
+	  #else
+	  
+	  // Now, we prefer to exit on EOF,
+	  // only if it's at the begin of a new line.
+	  if(ch!=EOF){
+		  console->PutChar (ch);
+		  writeDone->P ();
+		  if(ch!='\n'){
+			  console->PutChar ('>');
+			  writeDone->P ();
+		  }
+	  }
+	  else{
+		return;
+	  }
+	  if (ch=='\0'){ // EOT
+		  return;
+	  }
+      #endif
+      }
+}
+\end{lstlisting}
+
+
+
+\subsection{Entrées-sorties synchrones}
+\subsection{Le syscall PutChar}
+\subsection{La fonction SynchPutString}
+\subsection{Le syscall Halt}
+\subsection{Les Fonctions de lecture/écriture}
+\subsection{Jeu de test}
 A l'exécution de putchar.c, on s'attends à avoir le retour suivant :
 \begin{verbatim}
  $ ./nachos -x ./putchar
