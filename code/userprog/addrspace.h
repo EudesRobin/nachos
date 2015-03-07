@@ -18,6 +18,7 @@
 
 #ifdef CHANGED
 #include "bitmap.h"
+#include "synch.h"
 #endif //CHANGED
 
 #define UserStackSize		1024	// increase this as necessary!
@@ -34,8 +35,11 @@ class AddrSpace
     // before jumping to user code
 
 	#ifdef CHANGED
+	bool CheckFreeStack ();
 	int AllocStack ();
-	void FreeStack (int numPile);
+	void FreeStack (int numStack);
+	int StackValue(int BitmapValue);
+	void CheckLastThread();
 	#endif //CHANGED
 
     void SaveState ();		// Save/restore address space-specific
@@ -48,7 +52,8 @@ class AddrSpace
     // address space
 
 	#ifdef CHANGED
-	BitMap *pile;
+	BitMap *stack;
+	static int nbThreads;
 	#endif //CHANGED
 
 };

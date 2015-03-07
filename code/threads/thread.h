@@ -113,6 +113,10 @@ class Thread
 	printf ("%s, ", name);
     }
 
+	#ifdef CHANGED
+	int initStackReg;
+	#endif //CHANGED
+
   private:
     // some of the private data for this class is listed above
 
