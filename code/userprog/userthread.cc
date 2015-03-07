@@ -21,8 +21,6 @@ static void StartUserThread(int f){
 	currentThread->initStackReg=alloc;
 
 	machine->Run();
-
-	//TODO
 }
 
 int do_UserThreadCreate(int f, int arg){

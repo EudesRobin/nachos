@@ -50,10 +50,6 @@ class AddrSpace
     unsigned int numPages;	// Number of pages in the virtual 
     // address space
 
-	#ifdef CHANGED
-	BitMap *stack;
-	#endif //CHANGED
-
 };
 
 #endif // ADDRSPACE_H

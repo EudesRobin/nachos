@@ -28,6 +28,7 @@
 static bool askEnd=false;
 static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
 static int nbThreads=0;
+static BitMap *stack;
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -93,11 +94,6 @@ AddrSpace::AddrSpace (OpenFile * executable)
     DEBUG ('a', "Initializing address space, num pages %d, size %d\n",
 	   numPages, size);
 
-	#ifdef CHANGED
-	//Stack initially set
-	stack = new BitMap(numPages);
-	#endif //CHANGED
-
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++)
@@ -133,6 +129,12 @@ AddrSpace::AddrSpace (OpenFile * executable)
 			       [noffH.initData.virtualAddr]),
 			      noffH.initData.size, noffH.initData.inFileAddr);
       }
+
+	#ifdef CHANGED
+	//Main program's stack marked
+	stack = new BitMap(numPages);
+	stack->Mark(0);
+	#endif //CHANGED
 
 }
 
@@ -221,8 +223,8 @@ AddrSpace::AllocStack ()
 void
 AddrSpace::FreeStack (int numStack)
 {
-	if(stack->Test(numStack) || numStack%PageSize!=0){
-		printf("Error numStack\n");
+	if(!stack->Test(numStack)){
+		printf("Error numStack %d\n",numStack);
 		return;
 	}
 	nbThreads--;
@@ -241,7 +243,7 @@ AddrSpace::FreeStack (int numStack)
 int
 AddrSpace::StackValue(int BitmapValue)
 {
-	return PageSize*numPages - BitmapValue*numPages;
+	return PageSize*numPages - BitmapValue*PageSize;
 }
 
 //----------------------------------------------------------------------
@@ -252,14 +254,13 @@ AddrSpace::StackValue(int BitmapValue)
 void
 AddrSpace::CheckLastThread ()
 {
-	nbThreads--;
-	printf("Begin CheckLastThread\n");
+	//printf("Begin CheckLastThread: nbThreads = %d\n",nbThreads);
 	if(nbThreads!=0){
 		askEnd=true;
 		BlockMultiThread->P();
 		askEnd=false;
 	}
-	printf("End CheckLastThread\n");
+	//printf("End CheckLastThread\n");
 }
 #endif //CHANGED
 
