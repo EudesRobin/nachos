@@ -84,6 +84,12 @@ AddrSpace::AddrSpace (OpenFile * executable)
 
     DEBUG ('a', "Initializing address space, num pages %d, size %d\n",
 	   numPages, size);
+
+	#ifdef CHANGED
+	//Pile initially set
+	pile = new BitMap(numPages);
+	#endif //CHANGED
+
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++)
@@ -167,6 +173,45 @@ AddrSpace::InitRegisters ()
     DEBUG ('a', "Initializing stack register to %d\n",
 	   numPages * PageSize - 16);
 }
+#ifdef CHANGED
+//----------------------------------------------------------------------
+// AddrSpace::AllocStack
+//      If there is a place in the pile that is free, returns a free
+//      position in the pile. If it does'nt exist, returns -1.
+//----------------------------------------------------------------------
+
+int
+AddrSpace::AllocStack ()
+{
+	if((pile->NumClear())<=0){
+		printf("Stack overflow\n");
+		return -1;
+	}
+	int tmp = pile->Find();
+	pile->Mark(tmp);
+	return tmp;
+}
+
+
+//Changer ces méthodes pour que l'entier en émission et réception soit au bon format d'adresse (* ou / pagesize)
+
+
+//----------------------------------------------------------------------
+// AddrSpace::FreeStack
+//      If the position numPile is set, clear it in the pile.
+//----------------------------------------------------------------------
+
+void
+AddrSpace::FreeStack (int numPile)
+{
+	if(pile->Test(numPile)){
+		printf("Error numPile\n");
+		return;
+	}
+	pile->Clear(numPile);
+}
+
+#endif //CHANGED
 
 //----------------------------------------------------------------------
 // AddrSpace::SaveState

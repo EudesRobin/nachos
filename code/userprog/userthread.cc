@@ -8,16 +8,17 @@
 static void StartUserThread(int f){
 	argThread *argt = (argThread *) f;
 
-	/*
 	//Save old registers
-	SaveState();
+	space->SaveState();
 	//Clean registers
-	InitRegisters();
-	*/
+	space->InitRegisters();
 
 	machine->WriteRegister (PCReg,argt->func);
 	machine->WriteRegister (NextPCReg,(argt->func)+4);
 	machine->WriteRegister (4,argt->argv);
+	int alloc = space->AllocStack();
+	Machine->WriteRegister (StackReg,alloc);
+	//Ajout champ dans thread définissant l'endroit dans la pile
 
 	machine->Run();
 
@@ -25,7 +26,10 @@ static void StartUserThread(int f){
 }
 
 int do_UserThreadCreate(int f, int arg){
+	//Verif pile dispo
 	Thread *t = new Thread("UserThread");
+
+	//Verif t!=NULL
 
 	argThread *argt = new argThread;
 

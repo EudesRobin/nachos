@@ -16,6 +16,10 @@
 #include "copyright.h"
 #include "filesys.h"
 
+#ifdef CHANGED
+#include "bitmap.h"
+#endif //CHANGED
+
 #define UserStackSize		1024	// increase this as necessary!
 
 class AddrSpace
@@ -29,6 +33,11 @@ class AddrSpace
     void InitRegisters ();	// Initialize user-level CPU registers,
     // before jumping to user code
 
+	#ifdef CHANGED
+	int AllocStack ();
+	void FreeStack (int numPile);
+	#endif //CHANGED
+
     void SaveState ();		// Save/restore address space-specific
     void RestoreState ();	// info on a context switch 
 
@@ -37,6 +46,11 @@ class AddrSpace
     // for now!
     unsigned int numPages;	// Number of pages in the virtual 
     // address space
+
+	#ifdef CHANGED
+	BitMap *pile;
+	#endif //CHANGED
+
 };
 
 #endif // ADDRSPACE_H
