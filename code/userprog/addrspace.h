@@ -18,7 +18,6 @@
 
 #ifdef CHANGED
 #include "bitmap.h"
-#include "synch.h"
 #endif //CHANGED
 
 #define UserStackSize		1024	// increase this as necessary!
@@ -53,7 +52,6 @@ class AddrSpace
 
 	#ifdef CHANGED
 	BitMap *stack;
-	static int nbThreads;
 	#endif //CHANGED
 
 };

@@ -23,8 +23,11 @@
 #include <strings.h>		/* for bzero */
 
 #ifdef CHANGED
+#include "synch.h"
+
 static bool askEnd=false;
 static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
+static int nbThreads=0;
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -93,7 +96,6 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	#ifdef CHANGED
 	//Stack initially set
 	stack = new BitMap(numPages);
-	nbThreads=0;
 	#endif //CHANGED
 
 // first, set up the translation 
