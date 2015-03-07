@@ -9,16 +9,16 @@ static void StartUserThread(int f){
 	argThread *argt = (argThread *) f;
 
 	//Save old registers
-	space->SaveState();
+	currentThread->space->SaveState();
 	//Clean registers
-	space->InitRegisters();
+	currentThread->space->InitRegisters();
 
 	machine->WriteRegister (PCReg,argt->func);
 	machine->WriteRegister (NextPCReg,(argt->func)+4);
 	machine->WriteRegister (4,argt->argv);
-	int alloc = space->AllocStack();
-	Machine->WriteRegister (StackReg,alloc);
-	//Ajout champ dans thread définissant l'endroit dans la pile
+	int alloc = currentThread->space->AllocStack();
+	Machine->WriteRegister (StackReg,currentThread->space->StackValue(alloc));
+	currentThread->initStackReg=alloc;
 
 	machine->Run();
 
@@ -26,10 +26,16 @@ static void StartUserThread(int f){
 }
 
 int do_UserThreadCreate(int f, int arg){
-	//Verif pile dispo
+	if(!currentThread->space->CheckFreeStack()){
+		printf("Error: Stack already full\n");
+		return -1;
+	}
 	Thread *t = new Thread("UserThread");
 
-	//Verif t!=NULL
+	if(t==NULL){
+		printf("Error: Thread non created");
+		return -1;
+	
 
 	argThread *argt = new argThread;
 
@@ -38,13 +44,16 @@ int do_UserThreadCreate(int f, int arg){
 	
 	t->Fork(StartUserThread,(int)argt);
 
-	//TODO
+	//Permet de démarrer le thread créé
+	currentThread->Yield();
 
 	return 0;
 }
 
 
 int do_UserThreadExit(){
+	currentThread->space->FreeStack(currentThread->initStackReg);
+	currentThread->Finish();
 	return 0;
 }
 

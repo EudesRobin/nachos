@@ -22,6 +22,11 @@
 
 #include <strings.h>		/* for bzero */
 
+#ifdef CHANGED
+static bool askEnd;
+static Semaphore *BlockMultiThread;
+#endif //CHANGED
+
 //----------------------------------------------------------------------
 // SwapHeader
 //      Do little endian to big endian conversion on the bytes in the 
@@ -86,8 +91,11 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	   numPages, size);
 
 	#ifdef CHANGED
-	//Pile initially set
-	pile = new BitMap(numPages);
+	//Stack initially set
+	stack = new BitMap(numPages);
+	BlockMultiThread = new Semaphore("BlockMultiThread",0);
+	askEnd=false;
+	nbThreads=0;
 	#endif //CHANGED
 
 // first, set up the translation 
@@ -175,42 +183,83 @@ AddrSpace::InitRegisters ()
 }
 #ifdef CHANGED
 //----------------------------------------------------------------------
+// AddrSpace::CheckFreeStack
+//      If there is an available position in the Stack, returns true.
+//	Else false.
+//----------------------------------------------------------------------
+
+bool
+AddrSpace::CheckFreeStack ()
+{
+	return (stack->NumClear())>0;
+}
+
+//----------------------------------------------------------------------
 // AddrSpace::AllocStack
-//      If there is a place in the pile that is free, returns a free
-//      position in the pile. If it does'nt exist, returns -1.
+//      If there is a place in the stack that is free, returns a free
+//      position in the stack. If it does'nt exist, returns -1.
 //----------------------------------------------------------------------
 
 int
 AddrSpace::AllocStack ()
 {
-	if((pile->NumClear())<=0){
+	if((stack->NumClear())<=0){
 		printf("Stack overflow\n");
 		return -1;
 	}
-	int tmp = pile->Find();
-	pile->Mark(tmp);
+	int tmp = stack->Find();
+	stack->Mark(tmp);
+	nbThreads++;
 	return tmp;
 }
 
-
-//Changer ces méthodes pour que l'entier en émission et réception soit au bon format d'adresse (* ou / pagesize)
-
-
 //----------------------------------------------------------------------
 // AddrSpace::FreeStack
-//      If the position numPile is set, clear it in the pile.
+//      If the position numStack is set, clear it in the stack.
 //----------------------------------------------------------------------
 
 void
-AddrSpace::FreeStack (int numPile)
+AddrSpace::FreeStack (int numStack)
 {
-	if(pile->Test(numPile)){
-		printf("Error numPile\n");
+	if(stack->Test(numStack) || numStack%PageSize!=0){
+		printf("Error numStack\n");
 		return;
 	}
-	pile->Clear(numPile);
+	nbThreads--;
+	if(askEnd && nbThreads==0){
+		BlockMultiThread->V();
+	}
+	stack->Clear(numStack);
 }
 
+
+//----------------------------------------------------------------------
+// AddrSpace::StackValue
+//      Returns the stack value associated to the bitmap value.
+//----------------------------------------------------------------------
+
+int
+AddrSpace::StackValue(int BitmapValue)
+{
+	return PageSize*numPages - BitmapValue*numPages;
+}
+
+//----------------------------------------------------------------------
+// AddrSpace::CheckLastThread
+//      Blocks Halt() when there are other alive threads.
+//----------------------------------------------------------------------
+
+void
+AddrSpace::CheckLastThread ()
+{
+	nbThreads--;
+	printf("Begin CheckLastThread\n");
+	if(nbThreads!=0){
+		askEnd=true;
+		BlockMultiThread->P();
+	}
+	printf("End CheckLastThread\n");
+}
 #endif //CHANGED
 
 //----------------------------------------------------------------------
