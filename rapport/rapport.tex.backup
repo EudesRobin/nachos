@@ -17,6 +17,11 @@
 \setlength{\footskip}{0cm}
 \setlength{\marginparsep}{0cm}
 \lstset{basicstyle=\small\ttfamily,breaklines=true}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\lstset{language=c++,basicstyle=\small\ttfamily,keywordstyle=\color{blue}\ttfamily,stringstyle=\color{red}\ttfamily,commentstyle=\color{green}\ttfamily,breaklines=true}
+
 
 %opening
 \title{Compte Rendu \\ NACHOS}
@@ -38,91 +43,234 @@ d'un appel système (syscall). Par la suite, nous nous interesserons à la gesti
 \newpage
 \section{Étape 2}
 \subsection{Entrées-sorties asynchrones}
+Une version élémentaire de gestion des entrées-sorties nous est fournie par NachOS, au travers de la classe \textit{Console}. Le code fournit
+effectue une  gestion asynchrone des entrées-sorties. Nous devons donc gérer la synchronisation grâce à deux sémaphores ( pour gérer l'écriture et la lecture )
+ainsi que deux handlers. Ceux-ci libèreront le sémaphore et nous informeront de la fin de l'opération de lecture/écriture. Ainsi, la synchronisation est assurée
+par ce mécanisme.
+
+Voici un extrait de code permetant cette gestion des entrées/sorties. Si le caractère est EOF, la machine s'arrête : syscall Halt() :
+\begin{lstlisting}[frame=single]
+void ConsoleTest (char *in, char *out){
+    char ch;
+    console = new Console (in, out, ReadAvail, WriteDone, 0);
+    readAvail = new Semaphore ("read avail", 0);
+    writeDone = new Semaphore ("write done", 0);
+
+    for (;;) {
+	  readAvail->P (); // wait for character to arrive
+	  ch = console->GetChar ();
+	  
+	  #ifdef CHANGED
+	  if(ch!='\n' && ch!=EOF){
+		  console->PutChar ('<');
+		  writeDone->P ();
+	  }
+	  #endif
+	  
+	  // Original code
+	  #ifndef CHANGED 
+	  console->PutChar (ch);
+	  writeDone->P (); // wait for write to finish
+	  if (ch == 'q')
+		  return;
+	  #else
+	  
+	  // Now, we prefer to exit on EOF,
+	  // only if it's at the begin of a new line.
+	  if(ch!=EOF){
+		  console->PutChar (ch);
+		  writeDone->P ();
+		  if(ch!='\n'){
+			  console->PutChar ('>');
+			  writeDone->P ();
+		  }
+	  }
+	  else{
+		return;
+	  }
+	  if (ch=='\0'){ // EOT
+		  return;
+	  }
+      #endif
+      }
+}
+\end{lstlisting}
+\newpage
 \subsection{Entrées-sorties synchrones}
+Nous devons maintenant créer une classe \textit{SynchConsole} afin de réaliser les opérations de synchronisation d'entrées/sorties automatiquement :
+\begin{lstlisting}[frame=single]
+
+static Semaphore *readAvail;
+static Semaphore *writeDone;
+static Semaphore *SemPutChar;
+static Semaphore *SemGetChar;
+static Semaphore *SemPutString;
+static Semaphore *SemGetString;
+
+static void ReadAvail(int arg) { readAvail->V(); }
+static void WriteDone(int arg) { writeDone->V(); }
+
+SynchConsole::SynchConsole(char *readFile, char *writeFile){
+	readAvail = new Semaphore("read avail", 0);
+	writeDone = new Semaphore("write done", 0);
+	console = new Console (readFile, writeFile, ReadAvail, WriteDone, 0);
+
+	SemPutChar = new Semaphore("PutChar", 1);
+	SemGetChar = new Semaphore("GetChar", 1);
+	SemPutString = new Semaphore("PutString", 1);
+	SemGetString = new Semaphore("GetString", 1);
+}
+
+SynchConsole::~SynchConsole(){
+	delete console;
+	delete writeDone;
+	delete readAvail;
+}
+
+void SynchConsole::SynchPutChar(const char ch){
+	SemPutChar->P();
+	console->PutChar (ch);
+	writeDone->P ();
+	SemPutChar->V();
+}
+
+char SynchConsole::SynchGetChar(){
+	SemGetChar->P();
+	char ch;
+	readAvail->P ();
+	ch = console->GetChar ();
+	SemGetChar->V();
+	return ch;
+}
+\end{lstlisting}
+\newpage
+Le test de ces méthodes est réalisé dans \textit{progtest.cc} par la fonction \textit{SynchConsoleTest}.
+\begin{lstlisting}[frame=single]
+ void SynchConsoleTest (char *in, char *out){
+	char ch;
+	SynchConsole *synchconsoletest = new SynchConsole(in, out);
+
+	while ((ch = synchconsoletest->SynchGetChar()) != EOF){
+		if(ch!='\n'){
+			synchconsoletest->SynchPutChar('<');
+			synchconsoletest->SynchPutChar(ch);
+			synchconsoletest->SynchPutChar('>');
+		}
+		else{
+			synchconsoletest->SynchPutChar(ch);
+		}
+	}
+	fprintf(stderr, "Solaris: EOF detected in SynchConsole!\n");
+}
+\end{lstlisting}
+\textit{Note : Chaque caractère est par ailleurs encadré par < >}
+
+Le fichier \textit{main.cc} est modifié pour prendre en compte l'option -sc qui permetra l'éxecution
+de la console synchrone. Initialement, la création de la console était effectuée dans \textit{system.cc , fonction Initilize}, mais suite à des erreurs
+rencontrées dans les phases de test, l'instanciation de SynchConsole a été déplacée dans le main.
+\begin{lstlisting}[frame=single]
+#ifdef CHANGED
+...
+else if (!strcmp (*argv, "-sc")){
+	if (argc == 1)
+	    SynchConsoleTest (NULL, NULL);
+	else
+	  {
+	      ASSERT (argc > 2);
+	      SynchConsoleTest (*(argv + 1), *(argv + 2));
+	      argCount = 3;
+	  }
+	interrupt->Halt ();
+}
+#endif // CHANGED
+\end{lstlisting}
+Deplus, la fonction \textit{Cleanup() , fichier exception.cc} est modifiée, pour suprimer cette nouvelle console lors de l'arrêt de la machine :
+\begin{lstlisting}[frame=single]
+...
+#ifdef CHANGED
+    delete synchconsole;
+#endif //CHANGED
+...
+\end{lstlisting}
+\newpage
 \subsection{Le syscall PutChar}
-\subsection{La fonction SynchPutString}
+Pour réaliser cet appel système, nous modifions \textit{syscall.h}, afin d'y ajouter putchar :
+\begin{lstlisting}[frame=single]
+ #define SC_PutChar		11
+ ...
+/* Print the character c on the terminal */
+void PutChar(char c);
+...
+\end{lstlisting}
+Le syscall est ensuite définit dans \textit{start.S} (en assembleur), en nous inspirant des syscall existants :
+\begin{lstlisting}[frame=single]
+	.globl PutChar
+	.ent	PutChar
+PutChar:
+	addiu $2,$0,SC_PutChar
+	syscall
+	j	$31
+	.end PutChar
+\end{lstlisting}
+Le syscall \textit{PutChar} défini, il nous reste à mettre en place de handler qui se chargera de la prise en compte
+des exceptions relatives à PutChar ( fichier \textit{exception.cc, fonction ExceptionHandler} ) :
+
+\begin{lstlisting}[frame=single]
+if (which == SyscallException){
+	switch(type){
+		case SC_Halt:{
+			DEBUG ('a', "Shutdown, initiated by user program.\n");
+			interrupt->Halt ();
+			break;
+		}
+		case SC_PutChar:{
+			int c = machine->ReadRegister (4);
+			synchconsole->SynchPutChar((char)c);
+			break;
+		}
+		...
+		default:{
+			printf ("Unexpected user mode exception %d %d\n", which, type);
+			ASSERT (FALSE);
+		}
+	}
+}
+\end{lstlisting}
+\newpage
+\subsection{La manipulation de chaine de caractères}
+La manipulation des string nous permet d'étudier les spécificités de la simulation d'un système d'exploitation par NachOS.
+En effet, nous devons jongler entre 2 espaces mémoire : l'espace MIPS (NachOS) et l'espace Linux.
+\begin{lstlisting}[frame=single]
+// Used for SynchPutString 
+// get string from mips memory space , put it in linux memory space
+void copyStringFromMachine( int from, char *to, unsigned size){
+	unsigned int i;
+	int tmp;
+	for(i=0;i<size;i++){
+		if(machine->ReadMem(from+i,1,&tmp))
+		to[i]=tmp;
+	}
+	if(tmp!='\0'){
+		to[size-1]='\0';
+	}
+}
+// Used for SynchGetString
+// get string from linux memory space, put it to mips memory space
+void copyStringToMachine( char *from, int to, unsigned size){
+	unsigned int i;
+	int tmp;
+	for(i=0;i<size-1;i++){
+		tmp=from[i];
+		machine->WriteMem(to+i,1,tmp);
+	}
+	tmp='\0';
+	machine->WriteMem(to+i,1,tmp);
+}
+\end{lstlisting}
+
+Nous devons ensuite ajouter les syscall associés SynchPutString et SynchGetString :
 \subsection{Le syscall Halt}
 \subsection{Les Fonctions de lecture/écriture}
 \subsection{Jeu de test}
-A l'exécution de putchar.c, on s'attends à avoir le retour suivant :
-\begin{verbatim}
- $ ./nachos -x ./putchar
- abcd
- [...] # retour du syscall halt
-\end{verbatim}
-\subsection{Partie II : Entrées-sorties asynchrones}
-\subsubsection{Observation de progtest.cc}
-\begin{verbatim}
- ./nachos-userprog -c
-test
-test # retour de la console
-arret si on tape sur q et rien ensuite
-arret si on tape sur qMachine halting! # retour de la console
-[...]
-\end{verbatim}
-La console se ferme sur la lecture du caractère ``q'' , et ignore tout ce qu'on a put saisir ensuite. (\#Action II.1)
-
-\subsubsection{ Modifications de progtest.cc}
-
-Trace d'exécution :
-
-
-\begin{verbatim}
- $ ./nachos-step2 -c
-test
-<t><e><s><t>
-
-
-test<t><e><s>< # test suivi de ^D
-t> # dernier caractère qui s'affiche après entréé
-Machine halting! # ^D en debut de ligne bien pris en compte
-
-\end{verbatim}
-
-Après quelques modifications, la terminaison de la console s'effectue sur fin de fichier ou, sur un tty, \^D en début de ligne.
-Cependant, nous notons un léger disfonctionement suite à nos modifications : lorsque l'on effectue un \^D en fin de ligne, le dernier caractère tapé ne sera pas affiché
-avant que l'on appuie sur entrée. Ce problème se manifeste uniquement dans ce cas, nous pensons à un soucis de buffer. (\#Action II.2)
-
-Par ailleurs, on peut observer que chaque caractère est bien encadré de < > . ( \# Action II.3)
-
-Le test avec un fichier d'entrée et de sortie fonctionne correctement. ( \#Action II.4)
-\newpage
-\subsection{Entrées-sorties synchrones}
-Nous allons maintenant dévelloper une console synchrone. Dans un premier temps, nous copions un squelette fourni. (\#Action III.1)
-
-Ensuite, les fonctions de manipulations des caractères sont complétées :
-\begin{verbatim}
- void SynchConsole::SynchPutChar(const char ch)
-{
-  SemPutChar->P();
-  console->PutChar (ch);
-  writeDone->P (); // wait for write to finish
-  SemPutChar->V();
-}
-
-char SynchConsole::SynchGetChar()
-{
-  SemGetChar->P();
-  char ch;
-  readAvail->P (); // wait for character to arrive
-  ch = console->GetChar ();
-  SemGetChar->V();
-  return ch;
-}
-
-\end{verbatim}
-
-La manipulation de String n'est rien de plus qu'une itération d'appels aux fonctions de manipulation des char,
-après tout, une string n'est qu'une suite de caractères.
-Explications du fonctionnement sur PutChar :
-
-Dans un premier temps, on prend le sémaphore afin d'assurer qu'un seul caractère est traité à la fois (section critique).
-L'opération ``put'' est ensuite effectuée. On attend que le write se termine pour libérer le sémaphore de la section critique,
-grâce à un second sémaphore (writeDone), qui sera libéré l'écriture effectuée.
-
-On retrouve ce principe sur la fonction getchar.
-
-Par ailleurs, on peut observer quelques subtilitées dans la fonction getString, afin de conserver un fonctionnement cohérent :
-prise en compte du \^D uniquement en début de ligne, entre autres. (\#Action III.2 )
 
 \end{document}
