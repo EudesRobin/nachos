@@ -37,7 +37,6 @@ class AddrSpace
 	#ifdef CHANGED
 	//L'utilisateur utilise au plus divRoundUp(UserStackSize,PageSize) threads concurrents 
 	Semaphore *TabSemJoin[divRoundUp(UserStackSize,PageSize)];
-	BitMap *stack;
 	bool CheckFreeStack ();
 	int AllocStack ();
 	void FreeStack (int numStack);
@@ -53,6 +52,9 @@ class AddrSpace
     // for now!
     unsigned int numPages;	// Number of pages in the virtual 
     // address space
+	#ifdef CHANGED
+	BitMap *stack;
+	#endif //CHANGED
 
 };
 
