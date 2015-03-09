@@ -167,6 +167,10 @@ ExceptionHandler (ExceptionType which)
 				do_UserThreadExit();	//On quitte le thread
 				break;
 			}
+			case SC_UserThreadJoin:{
+				UserThreadJoin(machine->ReadRegister (4));	//UserJoin call
+				break;
+			}
 			default:{
 				printf ("Unexpected user mode exception %d %d\n", which, type);
 				ASSERT (FALSE);

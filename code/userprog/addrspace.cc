@@ -30,7 +30,6 @@ static bool askEnd=false;
 static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
 static Semaphore *SemThread = new Semaphore("SemThread",1);
 static int nbThreads=0;
-static BitMap *stack;
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -138,7 +137,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
 
 	#ifdef CHANGED
 	//Main program's stack marked
-	stack = new BitMap(numPages);
+	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
 	stack->Mark(0);
 	#endif //CHANGED
 
@@ -221,9 +220,9 @@ AddrSpace::AllocStack ()
 		printf("Stack overflow\n");
 		return -1;
 	}
+	SemThread->P();	
 	int tmp = stack->Find();
 	stack->Mark(tmp);
-	SemThread->P();	
 	nbThreads++;
 	SemThread->V();
 	return tmp;

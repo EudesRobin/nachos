@@ -17,6 +17,7 @@ static void StartUserThread(int f){
 	machine->WriteRegister (NextPCReg,(argt->func)+4);
 	machine->WriteRegister (4,argt->argv);
 	int alloc = currentThread->space->AllocStack();
+	printf("valeur désirée %d\n",alloc);
 	machine->WriteRegister (StackReg,currentThread->space->StackValue(alloc));
 	currentThread->initStackReg=alloc;
 
@@ -31,7 +32,7 @@ int do_UserThreadCreate(int f, int arg){
 	Thread *t = new Thread("UserThread");
 
 	if(t==NULL){
-		printf("Error: Thread non created");
+		printf("Error: Thread non created\n");
 		return -1;
 	}
 
