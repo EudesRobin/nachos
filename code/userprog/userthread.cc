@@ -5,6 +5,8 @@
 #include "addrspace.h"
 #include "system.h"
 
+static Semaphore *await = new Semaphore("Wait",0);
+
 static void StartUserThread(int f){
 	argThread *argt = (argThread *) f;
 
@@ -17,9 +19,10 @@ static void StartUserThread(int f){
 	machine->WriteRegister (NextPCReg,(argt->func)+4);
 	machine->WriteRegister (4,argt->argv);
 	int alloc = currentThread->space->AllocStack();
-	printf("valeur désirée %d\n",alloc);
 	machine->WriteRegister (StackReg,currentThread->space->StackValue(alloc));
 	currentThread->initStackReg=alloc;
+
+	await->V();
 
 	machine->Run();
 }
@@ -42,6 +45,8 @@ int do_UserThreadCreate(int f, int arg){
 	argt->argv = arg;
 	
 	t->Fork(StartUserThread,(int)argt);
+
+	await->P();
 
 	currentThread->space->TabSemJoin[t->initStackReg]->P();
 
