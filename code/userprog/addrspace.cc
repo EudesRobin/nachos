@@ -243,7 +243,7 @@ AddrSpace::FreeStack (int numStack)
 	}
 	SemThread->P();
 	nbThreads--;
-	SemThread->P();
+	SemThread->V();
 	if(askEnd && nbThreads==0){
 		BlockMultiThread->V();
 	}
