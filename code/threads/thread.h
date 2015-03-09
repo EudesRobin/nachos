@@ -43,6 +43,7 @@
 #ifdef USER_PROGRAM
 #include "machine.h"
 #include "addrspace.h"
+#include "synch.h"
 #endif
 
 // CPU register state to be saved on context switch.  
@@ -115,6 +116,7 @@ class Thread
 
 	#ifdef CHANGED
 	int initStackReg;
+	int dependance;
 	#endif //CHANGED
 
   private:

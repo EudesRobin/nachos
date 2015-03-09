@@ -18,6 +18,7 @@
 
 #ifdef CHANGED
 #include "bitmap.h"
+#include "synch.h"
 #endif //CHANGED
 
 #define UserStackSize		1024	// increase this as necessary!
@@ -34,6 +35,8 @@ class AddrSpace
     // before jumping to user code
 
 	#ifdef CHANGED
+	//L'utilisateur utilise au plus divRoundUp(UserStackSize,PageSize) threads concurrents 
+	static Semaphore *TabSemJoin[divRoundUp(UserStackSize,PageSize)];
 	bool CheckFreeStack ();
 	int AllocStack ();
 	void FreeStack (int numStack);

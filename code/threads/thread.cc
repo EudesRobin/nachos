@@ -39,6 +39,9 @@ Thread::Thread (const char *threadName)
     stack = NULL;
     status = JUST_CREATED;
 #ifdef USER_PROGRAM
+	#ifdef CHANGED
+	dependance=-1;
+	#endif //CHANGED
     space = NULL;
     // FBT: Need to initialize special registers of simulator to 0
     // in particular LoadReg or it could crash when switching

@@ -42,15 +42,37 @@ int do_UserThreadCreate(int f, int arg){
 	
 	t->Fork(StartUserThread,(int)argt);
 
+	currentThread->space->TabSemJoin[t->initStackReg]->P();
+
+	//initStackReg peut être utilisé comme identifiant du thread
+	machine->WriteRegister(2, t->initStackReg);
+
 	//Permet de démarrer le thread créé
 	currentThread->Yield();
 
 	return 0;
 }
 
+int UserThreadJoin(int t){
+	if(currentThread->dependance!=-1){
+		printf("Le thread possède déjà une dépendance\n");
+		return -1;
+	}
+	if(currentThread->initStackReg==t){
+		printf("Tentative de dépendance vers soi-même impossible\n");
+		return -1;
+	}
+	currentThread->dependance=t;
+	currentThread->space->TabSemJoin[t]->P();
+	return 0;
+}
+
 
 int do_UserThreadExit(){
 	currentThread->space->FreeStack(currentThread->initStackReg);
+	currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
+	if(currentThread->dependance!=-1)
+		currentThread->space->TabSemJoin[currentThread->dependance]->V();
 	currentThread->Finish();
 	return 0;
 }

@@ -25,8 +25,10 @@
 #ifdef CHANGED
 #include "synch.h"
 
+//Variables globales
 static bool askEnd=false;
 static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
+static Semaphore *SemThread = new Semaphore("SemThread",1);
 static int nbThreads=0;
 static BitMap *stack;
 #endif //CHANGED
@@ -106,6 +108,10 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	  pageTable[i].readOnly = FALSE;	// if the code segment was entirely on 
 	  // a separate page, we could set its 
 	  // pages to be read-only
+	#ifdef CHANGED
+	if(i<divRoundUp(UserStackSize,PageSize))
+		this->TabSemJoin[i] = new Semaphore("SemJoin",1);
+	#endif //CHANGED
       }
 
 // zero out the entire address space, to zero the unitialized data segment 
@@ -148,6 +154,12 @@ AddrSpace::~AddrSpace ()
   // LB: Missing [] for delete
   // delete pageTable;
   delete [] pageTable;
+	#ifdef CHANGED
+	int i;
+	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
+		delete this->TabSemJoin[i];
+	}
+	#endif //CHANGED
   // End of modification
 }
 
@@ -211,7 +223,9 @@ AddrSpace::AllocStack ()
 	}
 	int tmp = stack->Find();
 	stack->Mark(tmp);
+	SemThread->P();	
 	nbThreads++;
+	SemThread->V();
 	return tmp;
 }
 
@@ -227,7 +241,9 @@ AddrSpace::FreeStack (int numStack)
 		printf("Error numStack %d\n",numStack);
 		return;
 	}
+	SemThread->P();
 	nbThreads--;
+	SemThread->P();
 	if(askEnd && nbThreads==0){
 		BlockMultiThread->V();
 	}
