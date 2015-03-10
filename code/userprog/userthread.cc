@@ -6,6 +6,7 @@
 #include "system.h"
 
 static Semaphore *await = new Semaphore("Wait",0);
+static Semaphore *CheckThreadExistence = new Semaphore("CheckThreadExistence",1);
 
 static void StartUserThread(int f){
 	argThread *argt = (argThread *) f;
@@ -39,6 +40,8 @@ int do_UserThreadCreate(int f, int arg){
 		return -1;
 	}
 
+	CheckThreadExistence->P();
+
 	argThread *argt = new argThread;
 
 	argt->func = f;
@@ -52,6 +55,8 @@ int do_UserThreadCreate(int f, int arg){
 
 	//initStackReg peut être utilisé comme identifiant du thread
 	machine->WriteRegister(2, t->initStackReg);
+
+	CheckThreadExistence->V();
 
 	//Permet de démarrer le thread créé
 	currentThread->Yield();
@@ -68,6 +73,12 @@ int UserThreadJoin(int t){
 		printf("Tentative de dépendance vers soi-même impossible\n");
 		return -1;
 	}
+	CheckThreadExistence->P();
+	if(!currentThread->space->Test(t)){
+		printf("Tentative de dépendance vers un thread non existant\n");
+		return -1;
+	}
+	CheckThreadExistence->V();
 	currentThread->dependance=t;
 	currentThread->space->TabSemJoin[t]->P();
 	return 0;

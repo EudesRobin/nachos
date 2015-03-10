@@ -42,6 +42,7 @@ class AddrSpace
 	void FreeStack (int numStack);
 	int StackValue(int BitmapValue);
 	void CheckLastThread();
+	bool Test(int BitmapValue);
 	#endif //CHANGED
 
     void SaveState ();		// Save/restore address space-specific

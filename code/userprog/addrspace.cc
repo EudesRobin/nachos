@@ -277,6 +277,12 @@ AddrSpace::CheckLastThread ()
 	}
 	//printf("End CheckLastThread\n");
 }
+
+bool
+AddrSpace::Test(int BitmapValue)
+{
+	return this->stack->Test(BitmapValue);
+}
 #endif //CHANGED
 
 //----------------------------------------------------------------------
