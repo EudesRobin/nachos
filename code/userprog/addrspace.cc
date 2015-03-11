@@ -30,6 +30,22 @@ static bool askEnd=false;
 static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
 static Semaphore *SemThread = new Semaphore("SemThread",1);
 static int nbThreads=0;
+
+//static 
+void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, int position, TranslationEntry *pageTable,unsigned numPages){
+	if ((numBytes <= 0) ||  (virtualaddr < 0) || ((unsigned)virtualaddr > numPages*PageSize)){
+		printf("Erreur ReadAtVirtual\n");
+		return;
+	}
+	char *into = new char[numBytes+(numBytes%4)];
+	executable->ReadAt(into,numBytes,position);
+	int i;
+	for(i=0;i<numBytes;i=+4){
+		machine->WriteMem((int)(virtualaddr+(4*i)), 4, (int)(into+(4*i)));
+	}
+
+	delete [] into;
+}
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -75,6 +91,10 @@ AddrSpace::AddrSpace (OpenFile * executable)
     NoffHeader noffH;
     unsigned int i, size;
 
+	#ifdef CHANGED
+	//ReadAt lit l'entête d'executable (début de lecture: position 0, nombre de bytes lu: sizeof(NoffHeader) )
+	//La valeur de l'entête est stockée dans noffH
+	#endif //CHANGED
     executable->ReadAt ((char *) &noffH, sizeof (noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) &&
 	(WordToHost (noffH.noffMagic) == NOFFMAGIC))
@@ -122,17 +142,25 @@ AddrSpace::AddrSpace (OpenFile * executable)
       {
 	  DEBUG ('a', "Initializing code segment, at 0x%x, size %d\n",
 		 noffH.code.virtualAddr, noffH.code.size);
+	//#ifndef CHANGED
 	  executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
 			      noffH.code.size, noffH.code.inFileAddr);
+	/*#else
+	ReadAtVirtual(executable, noffH.code.virtualAddr, noffH.code.size, noffH.code.inFileAddr, pageTable, numPages);
+	#endif //CHANGED*/
       }
     if (noffH.initData.size > 0)
       {
 	  DEBUG ('a', "Initializing data segment, at 0x%x, size %d\n",
 		 noffH.initData.virtualAddr, noffH.initData.size);
+	//#ifndef CHANGED
 	  executable->ReadAt (&
 			      (machine->mainMemory
 			       [noffH.initData.virtualAddr]),
 			      noffH.initData.size, noffH.initData.inFileAddr);
+	/*#else
+	ReadAtVirtual(executable, noffH.initData.virtualAddr, noffH.initData.size, noffH.initData.inFileAddr, pageTable, numPages);
+	#endif //CHANGED*/
       }
 
 	#ifdef CHANGED
