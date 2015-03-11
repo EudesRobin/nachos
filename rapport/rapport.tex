@@ -362,7 +362,65 @@ La méthode SynchGetString est un peu plus complexe que SynchPutString car nous 
 Si EOF est vu en début de ligne, on termine la console, sinon ce dernier est ignoré (comme dans un système Linux).
 \newpage
 \section{Étape 3}
+Dans un premier temps, nous nous intéresserons aux threads NachOS (mode kernel). Comment fonctionnent-ils ? Comment sont-ils initialisés ?
+Nous allons observer le fonctionnement de progtest.cc , pour observer comment un programme utilisateur est chargé et exécuté par NachOS.
 \subsection{Thread Nachos}
+Les threads NachOS sont créés et initialisés dans la méthode \textit{Thread()} dans le fichier \textit{thread.cc}.
+\begin{lstlisting}
+ Thread::Thread (const char *threadName){
+    name = threadName;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+
+#ifdef USER_PROGRAM
+#ifdef CHANGED
+    dependance=-1;
+#endif //CHANGED
+
+    space = NULL;
+
+    for (int r=NumGPRegs; r<NumTotalRegs; r++)
+      userRegisters[r] = 0;
+#endif
+}
+\end{lstlisting}
+La pile est initialisée. On positionne un entier ``dépendance'' à -1 (aucune dépendance vers un autre thread). Cette variable ajoutée nous sera utile par la suite,
+pour ajouter une dépendance du thread courant vers un autre thread. Ensuite, l'espace mémoire du thread, ( code exécuté par le thread ) est pour l'instant NULL. Enfin,
+les registres sont initialisés. À ce niveau, le thread a le status \textit{JUST\_CREATED}, il n'est pas encore prêt à être lancé ( status = \textit{READY} ).
+
+Pour rendre ce thread exécutable, un appel à la méthode \textit{Fork} doit être effectué. Cette méthode prend en paramètre un pointeur vers le programme à charger en mémoire, et
+les paramètres de la fonction (pointeur vers une structure contenant les arguments). L'espace mémoire du thread pointe vers celui thread courant, son status est mis à jour ( \textit{READY} ). Enfin, il est placé dans la ReadyQueue.
+
+\newpage
+
+Lors de la mise en place de l'espace d'adressage, le code qui sera exécuté par le thread est placé dans un objet \textit{NoffHeader}.
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.4]{./structnoff.png}
+   \caption{\label{structnoff} Structure NoffHeader}
+  \end{center}
+\end{figure}
+
+NoffMagic est un entier identifiant l'objet contenant le code à écuter comme étant de type NachOS.
+La documentation nous apprend par ailleurs que le format d'object NachOS est une simplification du format d'oject UNIX.
+Cet objet contient les segments code ( code exécutable ) et initdata (données initiales), ainsi qu'un segment ``uninitdata''.
+Ces données sont contenues dans un espace d'adressage dont la taille maximale est de 4*1024 bits (StackSize défini dans \textit{thread.h}) .
+\vspace{0.5cm}
+
+Le système divise cet espace en pages, puis il effectue la correspondance des adresses physiques en adresses virtuelles.
+Les données sont ensuite chargé en mémoire, en utilisant la table des pages. Ces dernières étapes sont réalisées dans le constructeur d'AddrSpace (fichier \textit{adrrspace.cc}).
+À ce niveau, les pages virtuelles sont des pages physiques, l'adressage virtuel sera réalisé dans l'étape 4.
+
+\vspace{0.5cm}
+
+Les registres sont initialisés( PCReg, NextPCReg, StackReg, et les autres registres de NachOS).
+Enfin, le programme est lancé, grâce à la méthode Run().
+
+
+
+
 \subsection{Thread Utilisateur}
 
 \end{document}
