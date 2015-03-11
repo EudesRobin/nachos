@@ -158,6 +158,7 @@ AddrSpace::~AddrSpace ()
 	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
 		delete this->TabSemJoin[i];
 	}
+	delete stack;
 	#endif //CHANGED
   // End of modification
 }
