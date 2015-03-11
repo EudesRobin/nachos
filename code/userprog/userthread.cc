@@ -69,13 +69,14 @@ int UserThreadJoin(int t){
 		printf("Le thread possède déjà une dépendance\n");
 		return -1;
 	}
-	if(currentThread->initStackReg==t){
-		printf("Tentative de dépendance vers soi-même impossible\n");
+	if(currentThread->initStackReg==t || t==0){
+		printf("Tentative de dépendance vers un thread invalide\n");
 		return -1;
 	}
 	CheckThreadExistence->P();
 	if(!currentThread->space->Test(t)){
 		printf("Tentative de dépendance vers un thread non existant\n");
+		CheckThreadExistence->V();
 		return -1;
 	}
 	CheckThreadExistence->V();
