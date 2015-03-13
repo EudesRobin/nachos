@@ -95,6 +95,4 @@ int do_UserThreadExit(){
 	return 0;
 }
 
-//stackreg(bitmap)
-
 #endif // CHANGED
