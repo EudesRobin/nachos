@@ -364,6 +364,7 @@ Si EOF est vu en début de ligne, on termine la console, sinon ce dernier est ig
 \section{Étape 3}
 Dans un premier temps, nous nous intéresserons aux threads NachOS (mode kernel). Comment fonctionnent-ils ? Comment sont-ils initialisés ?
 Nous allons observer le fonctionnement de progtest.cc, pour observer comment un programme utilisateur est chargé et exécuté par NachOS.
+
 \subsection{Thread Nachos}
 Les threads NachOS sont créés et initialisés dans la méthode \textit{Thread()} dans le fichier \textit{thread.cc}.
 \begin{lstlisting}
@@ -393,6 +394,7 @@ Pour rendre ce thread exécutable, un appel à la méthode \textit{Fork} doit ê
 les paramètres de la fonction (pointeur vers une structure contenant les arguments).
 L'espace mémoire du thread pointe vers celui du thread courant, son statut est mis à jour ( \textit{READY} ). Enfin, il est placé dans la ReadyQueue.
 
+
 \newpage
 
 Lors de la mise en place de l'espace d'adressage, le code qui sera exécuté par le thread est placé dans un objet \textit{NoffHeader}.
@@ -406,22 +408,170 @@ Lors de la mise en place de l'espace d'adressage, le code qui sera exécuté par
 
 NoffMagic est un entier identifiant l'objet contenant le code à éxecuter comme étant de type NachOS.
 La documentation nous apprend par ailleurs que le format d'object NachOS est une simplification du format d'oject UNIX.
-Cet objet contient les segments code (code exécutable) et initdata (données initiales), ainsi qu'un segment ``uninitdata''.
-Ces données sont contenues dans un espace d'adressage dont la taille maximale est de 4*1024 bits (StackSize défini dans \textit{thread.h}) .
+
+Cet objet contient les segments code ( code exécutable ) et initdata (données initiales), ainsi qu'un segment ``uninitdata''.
+Ces données sont contenues dans un espace d'adressage dont la taille maximale est de 4*1024 bits (StackSize défini dans \textit{thread.h}).
 \vspace{0.5cm}
 
 Le système divise cet espace en pages, puis il effectue la correspondance des adresses physiques en adresses virtuelles.
-Les données sont ensuite chargées en mémoire, en utilisant la table des pages. Ces dernières étapes sont réalisées dans le constructeur d'AddrSpace (fichier \textit{adrrspace.cc}).
+
+En regardant le fichier \textit{userprog/addrspace.cc}, nous pouvons comprendre le fonctionnement des fonctions saveUserState et restoreUserState.
+La fonction saveUserState sauvegarde les registres qui sont utilisés par le thread courant. Ces données sont sauvegardées dans le tableau  userRegisters,
+propre à chaque thread. La fonction restoreUserState effectue l'opération inverse, en restaurant les registres du thread courant.
+
+Les données sont ensuite chargé en mémoire, en utilisant la table des pages. Ces dernières étapes sont réalisées dans le constructeur d'AddrSpace (fichier \textit{adrrspace.cc}).
+
 À ce niveau, les pages virtuelles sont des pages physiques, l'adressage virtuel sera réalisé dans l'étape 4.
 
 \vspace{0.5cm}
 
 Les registres sont initialisés(PCReg, NextPCReg, StackReg, et les autres registres de NachOS).
 Enfin, le programme est lancé, grâce à la méthode Run().
-
-
-
-
+\newpage
 \subsection{Thread Utilisateur}
+\subsubsection{Syscall UserThreadCreate}
+On souhaite maintenant qu’un programme utilisateur puisse créer des threads au niveau utilisateur,
+c’est-à-dire effectuer un appel système \textit{int UserThreadCreate(void f(void *arg), void *arg)}.
+Nous réutilisons les mêmes mécaniques que pour les appels système de l'étape 2.
+
+Lors de l'appel système UserThreadCreate, nous appelons do\_UserThreadCreate.
+Cette première fonction de manipulation des threads utilisateurs est dans le fichier \textit{userthread.cc}.
+
+Code de la fonction do\_UserThreadCreate :
+\begin{lstlisting}[frame=single]
+int do_UserThreadCreate(int f, int arg){
+
+if(!currentThread->space->CheckFreeStack()){
+  printf("Error: Stack already full\n");
+  return -1;
+}
+
+Thread *t = new Thread("UserThread");
+
+if(t==NULL){
+  printf("Error: Thread non created\n");
+  return -1;
+}
+
+// En cas de user_join, mutex autour de son init
+//  -> eviter une dep vers un thread pas encore init.
+CheckThreadExistence->P();
+
+// struct with current f (first intruction)
+// and args ( la suite) .
+argThread *argt = new argThread;
+argt->func = f;
+argt->argv = arg;
+
+t->Fork(StartUserThread,(int)argt);
+
+// Afin que l'alloc dans la stack soit secure
+await->P();
+
+currentThread->space->TabSemJoin[t->initStackReg]->P();
+machine->WriteRegister(2, t->initStackReg);
+
+// On a termine d'init notre thread
+CheckThreadExistence->V();
+
+// Go to readyqueue
+currentThread->Yield();
+
+return 0;
+}
+\end{lstlisting}
+Note : la fonction a éé modifiée pour prendre en compte le multithreading au niveau user, d'où la présence de mutex, pour assurer la cohérence de la page table
+en cas de commutation de contexte.
+
+\subsubsection{Lancement du thread}
+Une fois le thread user créé, nous devons le lancer. Cette opération est réalisée par la fonction StartUserThread.
+Le prototype de la fonction nous impose un unique paramètre. Afin de pouvoir malgré tout passer les paramètres de la fonction,
+nous avons créé une structure :
+\begin{lstlisting}[frame=single]
+ typedef struct{
+		int func;
+		int argv;
+	}argThread;
+\end{lstlisting}
+
+La structure argThread  est initialisée avant l'appel à StartUserThread, qui va prendre en paramètre le pointeur vers cette structure, casté en int.
+
+Code de la fonction StartUserThread :
+\begin{lstlisting}[frame=single]
+ static void StartUserThread(int f){
+argThread *argt = (argThread *) f;
+
+//Save old registers
+currentThread->space->SaveState();
+//Clean registers
+currentThread->space->InitRegisters();
+
+machine->WriteRegister (PCReg,argt->func);
+machine->WriteRegister (NextPCReg,(argt->func)+4);
+machine->WriteRegister (4,argt->argv);
+
+// init bitmap (on marque l'id corespondant a la page )
+int alloc = currentThread->space->AllocStack();
+machine->WriteRegister (StackReg,currentThread->space->StackValue(alloc));
+currentThread->initStackReg=alloc;
+
+// Alloc dans la stack terminee
+//(  important pour que join fonctionne bien)
+// on controle pas quand l'OS commute...
+await->V();
+
+machine->Run();
+}
+\end{lstlisting}
+\newpage
+\subsubsection{Syscall UserThreadExit}
+Le thread utilisateur lancé, nous devons maintenant nous intéresser à son arrêt.
+Un nouvel appel système \textit{do\_UserThreadExit} est créé.
+
+
+\begin{lstlisting}[frame=single]
+ int do_UserThreadExit(){
+
+ currentThread->space->FreeStack(currentThread->initStackReg);
+ currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
+ 
+ if(currentThread->dependance!=-1)
+  currentThread->space->TabSemJoin[currentThread->dependance]->V();
+ 
+ currentThread->Finish();
+ 
+ return 0;
+}
+\end{lstlisting}
+\newpage
+\subsubsection{Syscall UserThreadJoin}
+Enfin, nous réalisons un dernier appel système, UserThreadJoin afin de forcer un thread à attendre la terminaison d'un thread (autre que lui même ou le thread principal).
+
+\begin{lstlisting}[frame=single]
+ int UserThreadJoin(int t){
+if(currentThread->dependance!=-1){
+  printf("Le thread possede deja une dependance\n");
+  return -1;
+}
+if(currentThread->initStackReg==t || t==0){
+  printf("Tentative de dependance vers un thread invalide\n");
+  return -1;
+}
+CheckThreadExistence->P();
+
+if(!currentThread->space->Test(t)){
+  printf("Tentative de dependance vers un thread non existant\n");
+  CheckThreadExistence->V();
+  return -1;
+}
+
+CheckThreadExistence->V();
+
+currentThread->dependance=t;
+currentThread->space->TabSemJoin[t]->P();
+return 0;
+}
+\end{lstlisting}
+
 
 \end{document}
