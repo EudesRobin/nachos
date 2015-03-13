@@ -45,12 +45,8 @@ static void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, i
 	machine->pageTable = pageTable ;
 	machine->pageTableSize = numPages ;
 	
-	for(i=0;i<numBytes;i++){
-		machine->WriteMem((int)(virtualaddr+i), 1, (int)(into[i]));
-	}
-
-	for(i=(virtualaddr/PageSize);i<=((virtualaddr+numBytes)/PageSize);i++){
-		//stack->Mark(i);
+	for(i=0;i<numBytes;i+=4){
+		machine->WriteMem((int)(virtualaddr+i), 4, (int)(*(int *)(into+i)));
 	}
 
 	machine->pageTable = page_old ;
@@ -162,15 +158,15 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	machine->pageTable = pageTable ;
 	machine->pageTableSize = numPages ;
 
-	for (i = 0; i < numPages*PageSize; i++)
+	for (i = 0; i < numPages*PageSize; i+=4)
 	{
-		machine->WriteMem(i, 1, 0);
+		machine->WriteMem(i, 4, 0);
 	}
 	machine->pageTable = page_old ;
 	machine->pageTableSize = numPages_old ;
 
 	//Main program's stack marked
-	stack = new BitMap(numPages);
+	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
 	stack->Mark(0);
 	#endif //CHANGED
 
