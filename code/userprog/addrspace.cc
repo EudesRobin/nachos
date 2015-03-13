@@ -130,7 +130,11 @@ AddrSpace::AddrSpace (OpenFile * executable)
     for (i = 0; i < numPages; i++)
       {
 	  pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-	  pageTable[i].physicalPage = i+1;
+	#ifndef CHANGED
+	  pageTable[i].physicalPage = i;
+	#else
+	  pageTable[i].physicalPage = machine->frameProvider->GetEmptyFrame();
+	#endif //CHANGED
 	  pageTable[i].valid = TRUE;
 	  pageTable[i].use = FALSE;
 	  pageTable[i].dirty = FALSE;
@@ -204,16 +208,17 @@ AddrSpace::AddrSpace (OpenFile * executable)
 
 AddrSpace::~AddrSpace ()
 {
-  // LB: Missing [] for delete
-  // delete pageTable;
-  delete [] pageTable;
 	#ifdef CHANGED
 	int i;
 	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
 		delete this->TabSemJoin[i];
+		machine->frameProvider->ReleaseFrame(pageTable[i].physicalPage);
 	}
 	delete stack;
 	#endif //CHANGED
+  // LB: Missing [] for delete
+  // delete pageTable;
+  delete [] pageTable;
   // End of modification
 }
 
@@ -313,7 +318,7 @@ AddrSpace::FreeStack (int numStack)
 int
 AddrSpace::StackValue(int BitmapValue)
 {
-	return PageSize*numPages - BitmapValue*PageSize;
+	return PageSize*numPages - 16 - BitmapValue*PageSize;
 }
 
 //----------------------------------------------------------------------

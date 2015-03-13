@@ -5,14 +5,17 @@
 class FrameProvider
 {
   public:
-	FrameProvider();
+	FrameProvider(int MemorySize);
 	~FrameProvider();
 	int GetEmptyFrame();
 	void ReleaseFrame(int numFrame);
 	int NumAvailFrame();
   private:
 	BitMap *phyMemBitmap;
-
+	/*
+	int *permutations;
+	int *retour_permutations;
+	*/
 };
 
 #endif //CHANGED

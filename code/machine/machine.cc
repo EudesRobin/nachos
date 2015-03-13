@@ -73,6 +73,10 @@ Machine::Machine(bool debug)
 
     singleStep = debug;
     CheckEndian();
+
+	#ifdef CHANGED
+	frameProvider = new FrameProvider(MemorySize);
+	#endif //CHANGED
 }
 
 //----------------------------------------------------------------------
