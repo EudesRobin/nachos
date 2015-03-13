@@ -318,7 +318,7 @@ AddrSpace::FreeStack (int numStack)
 int
 AddrSpace::StackValue(int BitmapValue)
 {
-	return PageSize*numPages - BitmapValue*PageSize;
+	return PageSize*numPages - 16 - BitmapValue*PageSize;
 }
 
 //----------------------------------------------------------------------

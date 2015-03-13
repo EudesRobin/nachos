@@ -12,7 +12,10 @@ class FrameProvider
 	int NumAvailFrame();
   private:
 	BitMap *phyMemBitmap;
-
+	/*
+	int *permutations;
+	int *retour_permutations;
+	*/
 };
 
 #endif //CHANGED
