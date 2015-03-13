@@ -31,18 +31,26 @@ static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
 static Semaphore *SemThread = new Semaphore("SemThread",1);
 static int nbThreads=0;
 
-//static 
-void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, int position, TranslationEntry *pageTable,unsigned numPages){
+static void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, int position, TranslationEntry *pageTable,unsigned numPages){
 	if ((numBytes <= 0) ||  (virtualaddr < 0) || ((unsigned)virtualaddr > numPages*PageSize)){
 		printf("Erreur ReadAtVirtual\n");
 		return;
 	}
+	int numPages_old = machine->pageTableSize;
+	TranslationEntry *page_old = machine->pageTable;
 	char *into = new char[numBytes+(numBytes%4)];
 	executable->ReadAt(into,numBytes,position);
 	int i;
-	for(i=0;i<numBytes;i=+4){
-		machine->WriteMem((int)(virtualaddr+(4*i)), 4, (int)(into+(4*i)));
+
+	machine->pageTable = pageTable ;
+	machine->pageTableSize = numPages ;
+	
+	for(i=0;i<numBytes;i+=4){
+		machine->WriteMem((int)(virtualaddr+i), 4, (int)(*(int *)(into+i)));
 	}
+
+	machine->pageTable = page_old ;
+	machine->pageTableSize = numPages_old ;
 
 	delete [] into;
 }
@@ -90,6 +98,10 @@ AddrSpace::AddrSpace (OpenFile * executable)
 {
     NoffHeader noffH;
     unsigned int i, size;
+	#ifdef CHANGED
+    int numPages_old ;
+    TranslationEntry *page_old ;
+	#endif 
 
 	#ifdef CHANGED
 	//ReadAt lit l'entête d'executable (début de lecture: position 0, nombre de bytes lu: sizeof(NoffHeader) )
@@ -127,47 +139,63 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	  pageTable[i].readOnly = FALSE;	// if the code segment was entirely on 
 	  // a separate page, we could set its 
 	  // pages to be read-only
+      }
+
+
 	#ifdef CHANGED
-	if(i<divRoundUp(UserStackSize,PageSize))
+	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++)
 		this->TabSemJoin[i] = new Semaphore("SemJoin",1);
 	#endif //CHANGED
-      }
 
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
+	#ifndef CHANGED
     bzero (machine->mainMemory, size);
+	#else
+	page_old = machine->pageTable ;
+	numPages_old = machine->pageTableSize ;
+
+	machine->pageTable = pageTable ;
+	machine->pageTableSize = numPages ;
+
+	for (i = 0; i < numPages*PageSize; i+=4)
+	{
+		machine->WriteMem(i, 4, 0);
+	}
+	machine->pageTable = page_old ;
+	machine->pageTableSize = numPages_old ;
+
+	//Main program's stack marked
+	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
+	stack->Mark(0);
+	#endif //CHANGED
+
 
 // then, copy in the code and data segments into memory
     if (noffH.code.size > 0)
       {
 	  DEBUG ('a', "Initializing code segment, at 0x%x, size %d\n",
 		 noffH.code.virtualAddr, noffH.code.size);
-	//#ifndef CHANGED
+	#ifndef CHANGED
 	  executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
 			      noffH.code.size, noffH.code.inFileAddr);
-	/*#else
+	#else
 	ReadAtVirtual(executable, noffH.code.virtualAddr, noffH.code.size, noffH.code.inFileAddr, pageTable, numPages);
-	#endif //CHANGED*/
+	#endif //CHANGED
       }
     if (noffH.initData.size > 0)
       {
 	  DEBUG ('a', "Initializing data segment, at 0x%x, size %d\n",
 		 noffH.initData.virtualAddr, noffH.initData.size);
-	//#ifndef CHANGED
+	#ifndef CHANGED
 	  executable->ReadAt (&
 			      (machine->mainMemory
 			       [noffH.initData.virtualAddr]),
 			      noffH.initData.size, noffH.initData.inFileAddr);
-	/*#else
+	#else
 	ReadAtVirtual(executable, noffH.initData.virtualAddr, noffH.initData.size, noffH.initData.inFileAddr, pageTable, numPages);
-	#endif //CHANGED*/
-      }
-
-	#ifdef CHANGED
-	//Main program's stack marked
-	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
-	stack->Mark(0);
 	#endif //CHANGED
+      }
 
 }
 
