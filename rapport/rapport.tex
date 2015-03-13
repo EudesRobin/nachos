@@ -432,12 +432,11 @@ Enfin, le programme est lancé, grâce à la méthode Run().
 \subsubsection{Syscall UserThreadCreate}
 On souhaite maintenant qu’un programme utilisateur puisse créer des threads au niveau utilisateur,
 c’est-à-dire effectuer un appel système \textit{int UserThreadCreate(void f(void *arg), void *arg)}.
-Nous réutilisons les mêmes mécaniques que pour les appels système de l'étape 2.
+Nous réutilisons les mêmes mécaniques que précédement.
 
-Lors de l'appel système UserThreadCreate, nous appelons do\_UserThreadCreate.
+Lors de l'appel système UserThreadCreate, nous appelons la fonction do\_UserThreadCreate.
 Cette première fonction de manipulation des threads utilisateurs est dans le fichier \textit{userthread.cc}.
 
-Code de la fonction do\_UserThreadCreate :
 \begin{lstlisting}[frame=single]
 int do_UserThreadCreate(int f, int arg){
 
@@ -468,7 +467,14 @@ t->Fork(StartUserThread,(int)argt);
 // Afin que l'alloc dans la stack soit secure
 await->P();
 
+// Si un thread X fait un join vers notre thread, il devra attendre
+// que le semaphore soit libere par notre thread lors de l'appel a do_UserThreadExit()
+// pour etre debloque : on prend ce semaphore ds UserThreadJoin(int <thread cible> ).
+// Ainsi, on force l'ordre d'exec, en forcant une attente du thread X sur ce semaphore.
+
 currentThread->space->TabSemJoin[t->initStackReg]->P();
+
+// set id thread
 machine->WriteRegister(2, t->initStackReg);
 
 // On a termine d'init notre thread
@@ -480,13 +486,13 @@ currentThread->Yield();
 return 0;
 }
 \end{lstlisting}
-Note : la fonction a éé modifiée pour prendre en compte le multithreading au niveau user, d'où la présence de mutex, pour assurer la cohérence de la page table
-en cas de commutation de contexte.
+Note : la fonction a été modifiée pour prendre en compte le multithreading au niveau user, d'où la présence de mutex ``CheckThreadExistence'',
+pour assurer la cohérence de la page table (bitmap) en cas de commutation de contexte.
 
-\subsubsection{Lancement du thread}
 Une fois le thread user créé, nous devons le lancer. Cette opération est réalisée par la fonction StartUserThread.
-Le prototype de la fonction nous impose un unique paramètre. Afin de pouvoir malgré tout passer les paramètres de la fonction,
-nous avons créé une structure :
+Le prototype de la fonction nous impose un unique paramètre. Nous devons passer les paramètres suivant : le poiteur vers la fonction et un pointeur vers les paramètres
+de la fonction. Nous avons créé une structure  regroupant ces paramètres. Nous passerons un pointeur vers cette structure en paramètre à StartUserThread.
+
 \begin{lstlisting}[frame=single]
  typedef struct{
 		int func;
@@ -494,9 +500,8 @@ nous avons créé une structure :
 	}argThread;
 \end{lstlisting}
 
-La structure argThread  est initialisée avant l'appel à StartUserThread, qui va prendre en paramètre le pointeur vers cette structure, casté en int.
+\subsubsection{Lancement du thread}
 
-Code de la fonction StartUserThread :
 \begin{lstlisting}[frame=single]
  static void StartUserThread(int f){
 argThread *argt = (argThread *) f;
@@ -506,13 +511,16 @@ currentThread->space->SaveState();
 //Clean registers
 currentThread->space->InitRegisters();
 
+// On place PC sur notre fonction
 machine->WriteRegister (PCReg,argt->func);
 machine->WriteRegister (NextPCReg,(argt->func)+4);
+// argument de notre fct
 machine->WriteRegister (4,argt->argv);
-
-// init bitmap (on marque l'id corespondant a la page )
+// init bitmap , retourne id ds bitmap
 int alloc = currentThread->space->AllocStack();
+// maj sommet pile
 machine->WriteRegister (StackReg,currentThread->space->StackValue(alloc));
+//save bitmap id thread (necesaire pour liberer l'espace ensuite )
 currentThread->initStackReg=alloc;
 
 // Alloc dans la stack terminee
@@ -526,13 +534,14 @@ machine->Run();
 \newpage
 \subsubsection{Syscall UserThreadExit}
 Le thread utilisateur lancé, nous devons maintenant nous intéresser à son arrêt.
-Un nouvel appel système \textit{do\_UserThreadExit} est créé.
-
+Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait appel à la fonction suivante (\textit{userthread.cc} ) :
 
 \begin{lstlisting}[frame=single]
  int do_UserThreadExit(){
 
+ // free bitmap 
  currentThread->space->FreeStack(currentThread->initStackReg);
+ 
  currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
  
  if(currentThread->dependance!=-1)
@@ -543,7 +552,7 @@ Un nouvel appel système \textit{do\_UserThreadExit} est créé.
  return 0;
 }
 \end{lstlisting}
-\newpage
+
 \subsubsection{Syscall UserThreadJoin}
 Enfin, nous réalisons un dernier appel système, UserThreadJoin afin de forcer un thread à attendre la terminaison d'un thread (autre que lui même ou le thread principal).
 
@@ -572,6 +581,56 @@ currentThread->space->TabSemJoin[t]->P();
 return 0;
 }
 \end{lstlisting}
+\newpage
+\subsection{Tests}
+
+\begin{lstlisting}
+ #include "syscall.h"
+
+void thread(int *i){
+	if(*i!=-1){
+		UserThreadJoin(*i);
+		SynchPutString("Thread ");
+		SynchPutInt(*i);
+		PutChar('\n');
+	}
+	else{
+		SynchPutString("Thread initial\n");
+		int a=1001;
+		int j;	
+		//Calcul sale pour "ralentir" le premier thread
+		for(j=0;j<1000;j++){
+			if(a%2){
+				a=a*2;
+			}
+			else{
+				a=a/2;
+			}
+		}
+	}
+	UserThreadExit();
+}
+
+int main(){
+	int param=-1;
+	int t1 = UserThreadCreate((void (*)(void *))thread,(void *)(&param));
+	int t2 = UserThreadCreate((void (*)(void *))thread,(void *)(&t1));
+	UserThreadJoin(t2);
+	SynchPutString("Main program terminated\n");
+	Halt();
+}
+\end{lstlisting}
+
+\begin{verbatim}
+./nachos-step2 -x makemultithreads
+Thread initial
+Thread 1
+Main program terminated
+Machine halting!
+
+\end{verbatim}
+
+
 
 
 \end{document}
