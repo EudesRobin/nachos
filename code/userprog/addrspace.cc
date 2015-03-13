@@ -170,7 +170,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	machine->pageTableSize = numPages_old ;
 
 	//Main program's stack marked
-	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
+	stack = new BitMap(numPages);
 	stack->Mark(0);
 	#endif //CHANGED
 
