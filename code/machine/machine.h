@@ -25,6 +25,9 @@
 #include "utility.h"
 #include "translate.h"
 #include "disk.h"
+#ifdef CHANGED
+#include "frameprovider.h"
+#endif //CHANGED
 
 // Definitions related to the size, and format of user memory
 
@@ -181,6 +184,10 @@ class Machine {
 
     TranslationEntry *pageTable;
     unsigned int pageTableSize;
+
+	#ifdef CHANGED
+	FrameProvider *frameProvider;
+	#endif //CHANGED
 
   private:
     bool singleStep;		// drop back into the debugger after each

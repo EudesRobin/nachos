@@ -1,10 +1,11 @@
 #ifdef CHANGED
 
 #include "frameprovider.h"
-#include "machine.h"
+#include "synch.h"
 
+static Semaphore *semFrame = new Semaphore("semFrame",1);
 
-FrameProvider::FrameProvider()
+FrameProvider::FrameProvider(int MemorySize)
 {
 	phyMemBitmap = new BitMap(MemorySize);
 }
@@ -20,7 +21,9 @@ FrameProvider::GetEmptyFrame()
 		printf("Stack overflow\n");
 		return -1;
 	}
+	semFrame->P();
 	int tmp = phyMemBitmap->Find();
+	semFrame->V();
 	phyMemBitmap->Mark(tmp);
 	return tmp;
 }
