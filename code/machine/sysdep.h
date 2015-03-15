@@ -49,6 +49,10 @@ extern void CallOnUserAbort(VoidNoArgFunctionPtr cleanUp);
 // Initialize the pseudo random number generator
 extern void RandomInit(unsigned seed);
 extern int Random();
+#ifdef CHANGED
+//Access of the NachOS time
+extern long long Time();
+#endif //CHANGED
 
 // Allocate, de-allocate an array, such that de-referencing
 // just beyond either end of the array will cause an error

@@ -462,6 +462,15 @@ Random()
     return rand();
 }
 
+#ifdef CHANGED
+//Access of the NachOS time
+long long
+Time()
+{
+	return stats->totalTicks;
+}
+#endif //CHANGED
+
 //----------------------------------------------------------------------
 // AllocBoundedArray
 // 	Return an array, with the two pages just before 
