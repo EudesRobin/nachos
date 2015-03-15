@@ -26,6 +26,7 @@
 #include "syscall.h"
 #ifdef CHANGED
 #include "userthread.h"
+#include "fork.h"
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -161,6 +162,7 @@ ExceptionHandler (ExceptionType which)
 			}
 			case SC_UserThreadCreate:{
 				do_UserThreadCreate(machine->ReadRegister (4), machine->ReadRegister (5));	//On créé le thread
+				//Le résultat de la fonction est stocké dans le bon registre au coeur du code
 				break;
 			}
 			case SC_UserThreadExit:{
@@ -169,6 +171,15 @@ ExceptionHandler (ExceptionType which)
 			}
 			case SC_UserThreadJoin:{
 				UserThreadJoin(machine->ReadRegister (4));	//UserJoin call
+				break;
+			}
+			case SC_ForkExec:{
+				char *buffer=new char[MAX_STRING_SIZE];
+				int s = machine->ReadRegister (4);	//L'adresse du string à insérer est dans le registre 4
+				copyStringFromMachine(s, buffer, MAX_STRING_SIZE);
+				int res = ForkExec(buffer);	//On fait appel à SynchPutString de synchconsole
+				machine->WriteRegister (2,res);
+				delete buffer;
 				break;
 			}
 			default:{
