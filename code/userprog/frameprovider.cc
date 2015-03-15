@@ -7,10 +7,10 @@
 static Semaphore *semFrame = new Semaphore("semFrame",1);
 
 
-FrameProvider::FrameProvider(int MemorySize)
+FrameProvider::FrameProvider(int NumPages)
 {
-	phyMemBitmap = new BitMap(MemorySize);
-	BitmapSize = MemorySize;
+	phyMemBitmap = new BitMap(NumPages);
+	BitmapSize = NumPages;
 }
 
 FrameProvider::~FrameProvider(){

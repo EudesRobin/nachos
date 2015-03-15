@@ -5,7 +5,7 @@
 class FrameProvider
 {
   public:
-	FrameProvider(int MemorySize);
+	FrameProvider(int NumPages);
 	~FrameProvider();
 	int GetEmptyFrame();
 	void ReleaseFrame(int numFrame);

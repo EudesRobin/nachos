@@ -75,7 +75,7 @@ Machine::Machine(bool debug)
     CheckEndian();
 
 	#ifdef CHANGED
-	frameProvider = new FrameProvider(MemorySize);
+	frameProvider = new FrameProvider(NumPhysPages);
 	#endif //CHANGED
 }
 
