@@ -438,7 +438,7 @@ Les données sont ensuite chargé en mémoire, en utilisant la table des pages c
 \newpage
 \subsection{Thread Utilisateur}
 Cette mécanique autour des threads est utilisée afin de supporter chaque thread utilisateur par un thread NachOS.
-Nous voyons un exemple dans \textit{progtest.cc}. Après avoir chargé le programme à exécuter en mémoire,
+Nous étudions maintenant \textit{StartProcess(..) , progtest.cc }. Après avoir chargé le programme à exécuter en mémoire,
 les registres sont initialisés(\textit{PCReg, NextPCReg, StackReg}, et les autres registres de NachOS) puis le programme est lancé, grâce à la méthode \textit{Run()}.
 \subsubsection{Syscall UserThreadCreate}
 On souhaite maintenant qu’un programme utilisateur puisse créer des threads au niveau utilisateur,
