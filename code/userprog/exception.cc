@@ -123,6 +123,12 @@ ExceptionHandler (ExceptionType which)
 				interrupt->Halt ();
 				break;
 			}
+			case SC_Exit:{
+				delete currentThread->space;
+				currentThread->Finish();
+				break;
+			}
+		
 			case SC_PutChar:{
 				int c = machine->ReadRegister (4);	//Le caractère à insérer est dans le registre 4
 				synchconsole->SynchPutChar((char)c);	//On fait appel à PutChar de synchconsole
