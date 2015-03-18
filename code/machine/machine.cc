@@ -73,10 +73,6 @@ Machine::Machine(bool debug)
 
     singleStep = debug;
     CheckEndian();
-
-	#ifdef CHANGED
-	frameProvider = new FrameProvider(NumPhysPages);
-	#endif //CHANGED
 }
 
 //----------------------------------------------------------------------
@@ -89,10 +85,6 @@ Machine::~Machine()
     delete [] mainMemory;
     if (tlb != NULL)
         delete [] tlb;
-	
-	#ifdef CHANGED
-	delete frameProvider;
-	#endif //CHANGED
 }
 
 //----------------------------------------------------------------------

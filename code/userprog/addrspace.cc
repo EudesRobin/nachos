@@ -133,7 +133,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	#ifndef CHANGED
 	  pageTable[i].physicalPage = i;
 	#else
-	  pageTable[i].physicalPage = machine->frameProvider->GetEmptyFrame();
+	  pageTable[i].physicalPage = frameProvider->GetEmptyFrame();
 	#endif //CHANGED
 	  pageTable[i].valid = TRUE;
 	  pageTable[i].use = FALSE;
@@ -209,10 +209,12 @@ AddrSpace::AddrSpace (OpenFile * executable)
 AddrSpace::~AddrSpace ()
 {
 	#ifdef CHANGED
-	int i;
+	unsigned i;
 	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
 		delete this->TabSemJoin[i];
-		machine->frameProvider->ReleaseFrame(pageTable[i].physicalPage);
+	}
+	for(i=0;i<numPages;i++){
+		frameProvider->ReleaseFrame(pageTable[i].physicalPage);
 	}
 	delete stack;
 	#endif //CHANGED
