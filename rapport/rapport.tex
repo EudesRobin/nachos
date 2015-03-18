@@ -38,18 +38,18 @@ En réalisant ce projet, nous avons pu mettre en pratique l'ensemble des connais
 comprendre les concepts entrant en jeu lors de la réalisation d'un système d'exploitation.
 \vspace{0.5cm}
 
-Dans un premier temps, nous allons nous intéresser
-à la gestion de l'affichage de chaînes de caractères de façon synchrone par le système. Nous allons également nous intéresser à la mise en place
-d'un appel système (syscall). Par la suite, nous nous intéresserons à la gestion des threads utilisateur, au multithreading.
+Dans un premier temps, nous allons nous intéresser au fonctionnement d'un appel système, comment le système les détecte, les gère.
+Dans une seconde partie, nous étudierons le multithreading, et de façon plus générale la gestion des threads par NachOS.
+
 \newpage
-\section{Étape 2}
+\section{Étape 2 : Etude d'un syscall}
 \subsection{Entrées-sorties asynchrones}
 Une version élémentaire de gestion des entrées-sorties nous est fournie par NachOS, au travers de la classe \textit{Console}. Le code fourni
 effectue une  gestion asynchrone des entrées-sorties. Nous devons donc gérer la synchronisation grâce à deux sémaphores (pour gérer l'écriture et la lecture)
 ainsi que deux handlers. Ceux-ci libèreront le sémaphore et nous informeront de la fin de l'opération de lecture/écriture. Ainsi, la synchronisation est assurée
 par ce mécanisme.
 
-Voici un extrait de code permettant cette gestion des entrées/sorties. Si le caractère est EOF, la machine s'arrête : syscall Halt() :
+Voici un extrait de code permettant cette gestion des entrées/sorties. Si le caractère est EOF, la machine s'arrête.
 \begin{lstlisting}[frame=single]
 void ConsoleTest (char *in, char *out){
     char ch;
@@ -166,8 +166,8 @@ Le test de ces méthodes est réalisé dans \textit{progtest.cc} par la fonction
 \end{lstlisting}
 \textit{Note : Chaque caractère est par ailleurs encadré par < >}
 
-Le fichier \textit{main.cc} est modifié pour prendre en compte l'option -sc qui permettra l'éxecution
-de la console synchrone. Initialement, la création de la console était effectuée dans \textit{system.cc , fonction Initialize}, mais suite à des erreurs
+Le fichier \textit{main.cc} est modifié pour prendre en compte l'option -sc qui permettra l'éxecution de la console synchrone.
+Initialement, la création de la console était effectuée dans \textit{system.cc , fonction Initialize}, mais suite à des erreurs
 rencontrées dans les phases de test, l'instanciation de SynchConsole a été déplacée dans le main.
 \begin{lstlisting}[frame=single]
 #ifdef CHANGED
@@ -185,25 +185,21 @@ else if (!strcmp (*argv, "-sc")){
 }
 #endif // CHANGED
 \end{lstlisting}
-Deplus, la fonction \textit{Cleanup() , fichier exception.cc} est modifiée, pour supprimer cette nouvelle console lors de l'arrêt de la machine :
+En conséquence, la fonction \textit{Cleanup() (system.cc)} est modifiée, pour supprimer cette nouvelle console lors de l'arrêt de NachOS.
 \begin{lstlisting}[frame=single]
-...
 #ifdef CHANGED
     delete synchconsole;
 #endif //CHANGED
-...
 \end{lstlisting}
 \newpage
-\subsection{Création d'un syscall, Putchar}
-Pour réaliser cet appel système, nous modifions \textit{syscall.h}, afin d'y ajouter putchar :
+\subsection{Création du syscall Putchar}
+Pour réaliser cet appel système, nous modifions \textit{syscall.h}, afin d'y ajouter une constante associée au syscall putchar.
+Cette constante indiquera au handler la nature de l'exception (  \textit{exception.cc, fonction ExceptionHandler} ).
 \begin{lstlisting}[frame=single]
  #define SC_PutChar		11
- ...
-/* Print the character c on the terminal */
-void PutChar(char c);
-...
 \end{lstlisting}
-Le syscall est ensuite défini dans \textit{start.S} (en assembleur), en nous inspirant des syscall existants :
+Le syscall est ensuite défini dans \textit{start.S} (en assembleur), en nous inspirant des syscall existants.
+
 \begin{lstlisting}[frame=single]
 	.globl PutChar
 	.ent	PutChar
@@ -213,8 +209,8 @@ PutChar:
 	j	$31
 	.end PutChar
 \end{lstlisting}
-Le syscall \textit{PutChar} défini, il nous reste à mettre en place le handler qui se chargera de la prise en compte
-des exceptions relatives à PutChar (fichier \textit{exception.cc, fonction ExceptionHandler}) :
+Le syscall \textit{PutChar} défini, il nous reste à mettre en place le handler qui se chargera de la gestion
+des exceptions relatives à PutChar (\textit{exception.cc, fonction ExceptionHandler}) :
 
 \begin{lstlisting}[frame=single]
 if (which == SyscallException){
@@ -229,7 +225,6 @@ if (which == SyscallException){
 			synchconsole->SynchPutChar((char)c);
 			break;
 		}
-		...
 		default:{
 			printf ("Unexpected user mode exception %d %d\n", which, type);
 			ASSERT (FALSE);
@@ -271,7 +266,6 @@ void copyStringToMachine( char *from, int to, unsigned size){
 
 Nous devons ensuite ajouter les syscall associés SynchPutString et SynchGetString (\textit{start.S}) :
 \begin{lstlisting}[frame=single]
-//...
  SynchPutString:
 	addiu $2,$0,SC_SynchPutString
 	syscall
@@ -280,7 +274,6 @@ Nous devons ensuite ajouter les syscall associés SynchPutString et SynchGetStri
 
 	.globl SynchGetChar
 	.ent	SynchGetChar
-//...
 SynchGetString:
 	addiu $2,$0,SC_SynchGetString
 	syscall
@@ -289,12 +282,10 @@ SynchGetString:
 
 	.globl SynchPutInt
 	.ent	SynchPutInt
-// ...
 \end{lstlisting}
 \newpage
-Et mettre en place les Handler associés, comme pour les précédents appels système. (fichier \textit{exception.cc, fonction ExceptionHandler}) :
+Et mettre en place les handlers associés, comme pour les précédents appels système. (\textit{exception.cc, fonction ExceptionHandler}) :
 \begin{lstlisting}[frame=single]
- ...
 case SC_SynchPutString:{
 	char *buffer=new char[MAX_STRING_SIZE];
 	int s = machine->ReadRegister (4);
@@ -303,7 +294,6 @@ case SC_SynchPutString:{
 	delete buffer;
 	break;
 }
-...
 case SC_SynchGetString:{
 	char *buffer=new char[MAX_STRING_SIZE];
 	int s = machine->ReadRegister (4);
@@ -317,7 +307,8 @@ case SC_SynchGetString:{
 \textit{Note : MAX\_STRING\_SIZE , SC\_SynchPutString, SC\_SynchGetString sont définis dans system.h }
 \newpage
 
-Enfin, les fonctions SynchPutString et SynchGetString sont définies dans SynchConsole.cc :
+Enfin, les fonctions SynchPutString et SynchGetString sont définies dans \textit{SynchConsole.cc}, elle seront appelé
+par le handler associé.
 
 \begin{lstlisting}[frame=single]
 void SynchConsole::SynchPutString(const char s[]){
@@ -362,9 +353,25 @@ SemGetString->V();
 La méthode SynchGetString est un peu plus complexe que SynchPutString car nous devons maintenir un comportement :
 Si EOF est vu en début de ligne, on termine la console, sinon ce dernier est ignoré (comme dans un système Linux).
 \newpage
-\section{Étape 3}
-Dans un premier temps, nous nous intéresserons aux threads NachOS (mode kernel). Comment fonctionnent-ils ? Comment sont-ils initialisés ?
-Nous allons observer le fonctionnement de progtest.cc, pour observer comment un programme utilisateur est chargé et exécuté par NachOS.
+\subsection{Bilan}
+Par cet exercice autour d'une console synchrone, nous comprenons désormais le mécanisme d'appel système.
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.2]{./nachos_syscall.png}
+   \caption{\label{syscall} Mécanique simplifiée d'un syscall}
+  \end{center}
+\end{figure}
+\begin{figure}[h]
+
+\begin{center}
+    \includegraphics[scale=0.3]{./nachos_syscall_details.png}
+   \caption{\label{syscall_det} Mécanique détaillée d'un syscall}
+  \end{center}
+\end{figure}
+\newpage
+\section{Étape 3 : Multithreading}
+Nous nous intéréssons désormais aux threads. Nous souhaitons au terme de cette étape pouvoir éxecuter des programmes utilisateurs multi-thread
+sur NachOS. Nous allons d'abord comprendre le fonctionnement d'un thread NachOS, afin de pouvoir ensuite utiliser cette mécanique pour nos threads utilisateur.
 
 \subsection{Thread Nachos}
 Les threads NachOS sont créés et initialisés dans la méthode \textit{Thread()} dans le fichier \textit{thread.cc}.
