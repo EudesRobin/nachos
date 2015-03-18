@@ -353,7 +353,7 @@ SemGetString->V();
 La méthode SynchGetString est un peu plus complexe que SynchPutString car nous devons maintenir un comportement :
 Si EOF est vu en début de ligne, on termine la console, sinon ce dernier est ignoré (comme dans un système Linux).
 \newpage
-\subsection{Bilan}
+\subsection{Déroulement global d'un syscall}
 Par cet exercice autour d'une console synchrone, nous comprenons désormais le mécanisme d'appel système.
 \begin{figure}[h]
   \begin{center}
@@ -378,7 +378,7 @@ sur NachOS. Nous allons d'abord comprendre le fonctionnement d'un thread NachOS,
 
 \subsection{Thread Nachos}
 Les threads NachOS sont créés et initialisés dans la méthode \textit{Thread()} dans le fichier \textit{thread.cc}.
-\begin{lstlisting}
+\begin{lstlisting}[frame=single]
  Thread::Thread (const char *threadName){
     name = threadName;
     stackTop = NULL;
@@ -398,13 +398,14 @@ Les threads NachOS sont créés et initialisés dans la méthode \textit{Thread(
 }
 \end{lstlisting}
 La pile est initialisée. On positionne un entier ``dépendance'' à -1 (aucune dépendance vers un autre thread). Cette variable ajoutée nous sera utile par la suite,
-pour ajouter une dépendance du thread courant vers un autre thread. Ensuite, l'espace mémoire du thread, (code exécuté par le thread) est pour l'instant NULL. Enfin,
-les registres sont initialisés. À ce niveau, le thread a le statut \textit{JUST\_CREATED}, il n'est pas encore prêt à être lancé (statut = \textit{READY}).
+pour ajouter une dépendance du thread courant vers un autre thread. Ensuite, l'espace mémoire du thread, (code exécuté par le thread) est initialisé à NULL. Enfin,
+les registres sont initialisés. À ce niveau, le thread a le statut \textit{JUST\_CREATED}, il n'est pas encore prêt à être lancé.
 
-Pour rendre ce thread exécutable, un appel à la méthode \textit{Fork} doit être effectué. Cette méthode prend en paramètre un pointeur vers le programme à charger en mémoire, et
-les paramètres de la fonction (pointeur vers une structure contenant les arguments).
-L'espace mémoire du thread pointe vers celui du thread courant, son statut est mis à jour ( \textit{READY} ). Enfin, il est placé dans la ReadyQueue.
+\vspace{0.5cm}
 
+Pour rendre un thread exécutable, un appel à la méthode \textit{Fork} doit être effectué. Cette méthode prend en paramètre un pointeur vers le programme à charger en mémoire, et
+les paramètres de la fonction (pointeur vers une structure contenant les arguments). Le thread ``forké'' partage le même espace mémoire que les autres thread du processus.
+Son statut est mis à jour ( \textit{READY} ). Enfin, il est placé dans la ReadyQueue , le thread a un programme à exécuter.
 
 \newpage
 
@@ -419,34 +420,36 @@ Lors de la mise en place de l'espace d'adressage, le code qui sera exécuté par
 
 NoffMagic est un entier identifiant l'objet contenant le code à éxecuter comme étant de type NachOS.
 La documentation nous apprend par ailleurs que le format d'object NachOS est une simplification du format d'oject UNIX.
-
-Cet objet contient les segments code ( code exécutable ) et initdata (données initiales), ainsi qu'un segment ``uninitdata''.
-Ces données sont contenues dans un espace d'adressage dont la taille maximale est de 4*1024 bits (StackSize défini dans \textit{thread.h}).
+Cet objet contient les segments code ( code exécutable ) et initdata (données initiales), entre autres.
+Ces données sont contenues dans un espace d'adressage propre au thread dont la taille est de 4*1024 bits (StackSize défini dans \textit{thread.h}).
+Par ailleurs, en lisant les commentaires, nous apprenons que nous allouons, dans cette simulation, un même espace (thread's private execution stack),
+indépendament du code exécuté par le thread. StackSize doit donc être de taille suffisante, pour nous éviter des erreurs diverses...
 \vspace{0.5cm}
 
-Le système divise cet espace en pages, puis il effectue la correspondance des adresses physiques en adresses virtuelles.
-
-En regardant le fichier \textit{userprog/addrspace.cc}, nous pouvons comprendre le fonctionnement des fonctions saveUserState et restoreUserState.
-La fonction saveUserState sauvegarde les registres qui sont utilisés par le thread courant. Ces données sont sauvegardées dans le tableau  userRegisters,
-propre à chaque thread. La fonction restoreUserState effectue l'opération inverse, en restaurant les registres du thread courant.
-
-Les données sont ensuite chargé en mémoire, en utilisant la table des pages. Ces dernières étapes sont réalisées dans le constructeur d'AddrSpace (fichier \textit{adrrspace.cc}).
+Le système divise cet espace en pages, puis il effectue la correspondance entre les adresses physiques et les adresses virtuelles.
+En observant le code fourni dans \textit{addrspace.cc}, nous pouvons comprendre le fonctionnement des fonctions \textit{saveUserState} et \textit{restoreUserState}.
+La fonction \textit{saveUserState} sauvegarde les registres qui sont utilisés par le thread. Ces données sont sauvegardées dans le tableau userRegisters,
+propre à chaque thread. La fonction \textit{restoreUserState} effectue l'opération inverse, en restaurant les registres du thread.
+Les données sont ensuite chargé en mémoire, en utilisant la table des pages créée précédement. Ces dernières étapes sont réalisées dans le constructeur d'AddrSpace.
+\vspace{0.5cm}
 
 À ce niveau, les pages virtuelles sont des pages physiques, l'adressage virtuel sera réalisé dans l'étape 4.
 
-\vspace{0.5cm}
-
-Les registres sont initialisés(PCReg, NextPCReg, StackReg, et les autres registres de NachOS).
-Enfin, le programme est lancé, grâce à la méthode Run().
 \newpage
 \subsection{Thread Utilisateur}
+Cette mécanique autour des threads est utilisée afin de supporter chaque thread utilisateur par un thread NachOS.
+Nous voyons un exemple dans \textit{progtest.cc}. Après avoir chargé le programme à exécuter en mémoire,
+les registres sont initialisés(\textit{PCReg, NextPCReg, StackReg}, et les autres registres de NachOS) puis le programme est lancé, grâce à la méthode \textit{Run()}.
 \subsubsection{Syscall UserThreadCreate}
 On souhaite maintenant qu’un programme utilisateur puisse créer des threads au niveau utilisateur,
 c’est-à-dire effectuer un appel système \textit{int UserThreadCreate(void f(void *arg), void *arg)}.
-Nous réutilisons les mêmes mécaniques que précédement.
+Nous réutilisons donc les mécaniques de l'étape précédante, pour mettre en place le syscall voulu.
 
-Lors de l'appel système UserThreadCreate, nous appelons la fonction do\_UserThreadCreate.
-Cette première fonction de manipulation des threads utilisateurs est dans le fichier \textit{userthread.cc}.
+Lors de l'appel système UserThreadCreate, nous appelons \textit{do\_UserThreadCreate}.
+Cette première fonction de manipulation des threads utilisateurs est définie dans \textit{userthread.cc}.
+Pour l'instant, nous nous intéréssons uniquement aux opérations liéé à la création d'un thread utilisateur.
+Certaines mécaniques ont du être ajouté pour assurer la cohérence de la page table et le bon fonctionnement d'une dépendance
+entre deux threads.
 
 \begin{lstlisting}[frame=single]
 int do_UserThreadCreate(int f, int arg){
@@ -467,8 +470,6 @@ if(t==NULL){
 //  -> eviter une dep vers un thread pas encore init.
 CheckThreadExistence->P();
 
-// struct with current f (first intruction)
-// and args ( la suite) .
 argThread *argt = new argThread;
 argt->func = f;
 argt->argv = arg;
@@ -478,38 +479,32 @@ t->Fork(StartUserThread,(int)argt);
 // Afin que l'alloc dans la stack soit secure
 await->P();
 
-// Si un thread X fait un join vers notre thread, il devra attendre
-// que le semaphore soit libere par notre thread lors de l'appel a do_UserThreadExit()
-// pour etre debloque : on prend ce semaphore ds UserThreadJoin(int <thread cible> ).
-// Ainsi, on force l'ordre d'exec, en forcant une attente du thread X sur ce semaphore.
-
+// Prend le sem, si un autre t a une dep sur lui -> en attente sur sem.
 currentThread->space->TabSemJoin[t->initStackReg]->P();
 
-// set id thread
+// set id thread into result reg, useful for join fct...
 machine->WriteRegister(2, t->initStackReg);
 
-// On a termine d'init notre thread
 CheckThreadExistence->V();
 
-// Go to readyqueue
 currentThread->Yield();
 
 return 0;
 }
 \end{lstlisting}
-Note : la fonction a été modifiée pour prendre en compte le multithreading au niveau user, d'où la présence de mutex ``CheckThreadExistence'',
-pour assurer la cohérence de la page table (bitmap) en cas de commutation de contexte.
-
-Une fois le thread user créé, nous devons le lancer. Cette opération est réalisée par la fonction StartUserThread.
+\newpage
+Le thread user créé, nous devons le lancer. Cette opération est réalisée par la fonction \textit{StartUserThread}.
 Le prototype de la fonction nous impose un unique paramètre. Nous devons passer les paramètres suivant : le poiteur vers la fonction et un pointeur vers les paramètres
-de la fonction. Nous avons créé une structure  regroupant ces paramètres. Nous passerons un pointeur vers cette structure en paramètre à StartUserThread.
-
+de la fonction. Nous avons créé une structure regroupant ces paramètres. Nous passerons un pointeur vers cette structure en paramètre à \textit{StartUserThread}.
 \begin{lstlisting}[frame=single]
  typedef struct{
 		int func;
 		int argv;
 	}argThread;
 \end{lstlisting}
+
+Toute les instructions exécutées après le Fork sont réalisées par le ``père'' et ont pour but d'assurer
+le bon fonctionnement d'une dépendance vers le thread créé par le Fork.
 
 \subsubsection{Lancement du thread}
 
@@ -527,11 +522,11 @@ machine->WriteRegister (PCReg,argt->func);
 machine->WriteRegister (NextPCReg,(argt->func)+4);
 // argument de notre fct
 machine->WriteRegister (4,argt->argv);
-// init bitmap , retourne id ds bitmap
+// init page , retourne id ds bitmap
 int alloc = currentThread->space->AllocStack();
 // maj sommet pile
 machine->WriteRegister (StackReg,currentThread->space->StackValue(alloc));
-//save bitmap id thread (necesaire pour liberer l'espace ensuite )
+//save bitmap page id thread (necesaire pour liberer l'espace ensuite )
 currentThread->initStackReg=alloc;
 
 // Alloc dans la stack terminee
@@ -542,15 +537,34 @@ await->V();
 machine->Run();
 }
 \end{lstlisting}
+
+Voici comment est réalisé l'allocation de la mémoire dans la pile pour notre thread:
+\begin{lstlisting}[frame=single]
+ int AddrSpace::AllocStack () {
+	if((stack->NumClear())<=0){
+		printf("Stack overflow\n");
+		return -1;
+	}
+	SemThread->P();	
+	int tmp = stack->Find();
+	stack->Mark(tmp);
+	nbThreads++;
+	SemThread->V();
+	return tmp;
+}
+\end{lstlisting}
+
+On recherche la première page libre, on la marque comme ``occupée''. Un compteur du nombre de thread est incrémenté.
+Ce dernier empeche le syscall Halt d'arrêter NachOS tant qu'un thread utilisateur existe ( et n'a pas terminé ).
 \newpage
 \subsubsection{Syscall UserThreadExit}
 Le thread utilisateur lancé, nous devons maintenant nous intéresser à son arrêt.
-Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait appel à la fonction suivante (\textit{userthread.cc} ) :
+Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait appel à la fonction suivante :
 
 \begin{lstlisting}[frame=single]
  int do_UserThreadExit(){
 
- // free bitmap 
+ // free bitmap page
  currentThread->space->FreeStack(currentThread->initStackReg);
  
  currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
@@ -566,7 +580,20 @@ Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait app
 
 \subsubsection{Syscall UserThreadJoin}
 Enfin, nous réalisons un dernier appel système, UserThreadJoin afin de forcer un thread à attendre la terminaison d'un thread (autre que lui même ou le thread principal).
+Pour mettre en place ce fonction, nous avons du mettre en place un système de sémaphore dans les précédantes fonctions.
 
+Lors de la création du thread ( \textit{do\_UserThreadCreate(...)}) , nous effectuons plusieurs manipulations  après le Fork. Nous prenons d'abord un sémaphore \textit{await}.
+Il sera libéré à la fin de \textit{StartUserThread} juste avant l'appel à \textit{Run()}. Nous prenons ensuite un second sémaphore \textit{TabSemJoin[t->initStackReg]}.
+Si un thread X fait un join vers ce thread, il devra attendre que le semaphore soit libéré par notre thread lors de l'appel à do\_UserThreadExit() pour prendre le sémaphore
+(on prend ce semaphore dans UserThreadJoin(..) ). Ainsi, on force l'ordre d'exécution ( la dépendance voulue !) , en forcant une attente du thread X sur le semaphore 
+corespondant au thread dont on veut dépendre.
+
+Lors de la terminaison du thread \textit{do\_UserThreadExit()}, le thread libère le sémaphore associé à son thread.
+Ainsi, il débloque d'éventuels thread en attente sur ce sémaphore, des thread qui avaient donc une dépendance vers lui.
+Si il avait lui même une dépendance, et qu'il est dans cette méthode, alors il doit libérer le sémaphore vers cette dépendance,
+permettant donc à d'autres threads en attente sur cette dernière de s'exécuter. Par cette mécanique de sémaphore, nous nous assurons d'avoir autant de P() que de V()
+sur les différents sémaphores, nous évitons donc tout deadlock.
+ 
 \begin{lstlisting}[frame=single]
  int UserThreadJoin(int t){
 if(currentThread->dependance!=-1){
@@ -593,9 +620,9 @@ return 0;
 }
 \end{lstlisting}
 \newpage
-\subsection{Tests}
+\subsection{Test du multithreading utilisateur}
 
-\begin{lstlisting}
+\begin{lstlisting}[frame=single]
  #include "syscall.h"
 
 void thread(int *i){
@@ -630,18 +657,22 @@ int main(){
 	SynchPutString("Main program terminated\n");
 	Halt();
 }
-\end{lstlisting}
 
-\begin{verbatim}
+// Trace d'execution
 ./nachos-step2 -x makemultithreads
 Thread initial
 Thread 1
 Main program terminated
 Machine halting!
+\end{lstlisting}
+\newpage
+\subsection{Déroulement d'une exécution avec dépendance entre 2 threads}
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.4]{./nachos_join.png}
+   \caption{\label{join} Déroulemet de l'exécution}
+  \end{center}
+\end{figure}
 
-\end{verbatim}
-
-
-
-
+On peut par ailleurs noter que cette exécution est englobé dans un thread principal, comme l'a montré notre trace d'exécution.
 \end{document}
