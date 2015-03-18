@@ -368,6 +368,9 @@ Par cet exercice autour d'une console synchrone, nous comprenons désormais le m
    \caption{\label{syscall_det} Mécanique détaillée d'un syscall}
   \end{center}
 \end{figure}
+
+On retrouve par ailleurs les mécaniques d'intéruptions vu en RICM3, dans le code de la fonction RaiseException (machine.cc).
+On passe en Kernel Mode pour la gestion de l'exception, puis on revient en User Mode.
 \newpage
 \section{Étape 3 : Multithreading}
 Nous nous intéréssons désormais aux threads. Nous souhaitons au terme de cette étape pouvoir éxecuter des programmes utilisateurs multi-thread
