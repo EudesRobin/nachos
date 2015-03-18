@@ -3,7 +3,7 @@
 void thread1(int *i){
 	int j;
 	for(j=0;j<*i;j++){
-		PutChar('a');
+		PutChar('c');
 	}
 	PutChar('\n');
 	UserThreadExit();
@@ -12,7 +12,7 @@ void thread1(int *i){
 void thread2(int *i){
 	int j;
 	for(j=0;j<*i;j++){
-		PutChar('b');
+		PutChar('d');
 	}
 	PutChar('\n');
 	UserThreadExit();
@@ -25,5 +25,5 @@ int main(){
 	t=UserThreadCreate((void (*)(void *))thread2,(void *)(&param));
 	UserThreadJoin(t);
 	SynchPutString("Main program terminated\n");
-	Halt();
+	Exit(0);
 }

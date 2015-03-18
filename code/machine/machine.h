@@ -34,8 +34,11 @@
 #define PageSize 	SectorSize 	// set the page size equal to
 					// the disk sector size, for
 					// simplicity
-
+#ifndef CHANGED
 #define NumPhysPages    32
+#else
+#define NumPhysPages    1024
+#endif //CHANGED
 #define MemorySize 	(NumPhysPages * PageSize)
 #define TLBSize		4		// if there is a TLB, make it small
 
@@ -184,10 +187,6 @@ class Machine {
 
     TranslationEntry *pageTable;
     unsigned int pageTableSize;
-
-	#ifdef CHANGED
-	FrameProvider *frameProvider;
-	#endif //CHANGED
 
   private:
     bool singleStep;		// drop back into the debugger after each
