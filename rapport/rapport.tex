@@ -357,20 +357,23 @@ Si EOF est vu en début de ligne, on termine la console, sinon ce dernier est ig
 Par cet exercice autour d'une console synchrone, nous comprenons désormais le mécanisme d'appel système.
 \begin{figure}[h]
   \begin{center}
-    \includegraphics[scale=0.2]{./nachos_syscall.png}
+    \includegraphics[scale=0.3]{./nachos_syscall.png}
    \caption{\label{syscall} Mécanique simplifiée d'un syscall}
   \end{center}
 \end{figure}
+\newpage
 \begin{figure}[h]
-
 \begin{center}
-    \includegraphics[scale=0.3]{./nachos_syscall_details.png}
+    \includegraphics[scale=0.39]{./nachos_syscall_details.png}
    \caption{\label{syscall_det} Mécanique détaillée d'un syscall}
   \end{center}
 \end{figure}
 
+
 On retrouve par ailleurs les mécaniques d'intéruptions vu en RICM3, dans le code de la fonction RaiseException (machine.cc).
 On passe en Kernel Mode pour la gestion de l'exception, puis on revient en User Mode.
+
+
 \newpage
 \section{Étape 3 : Multithreading}
 Nous nous intéréssons désormais aux threads. Nous souhaitons au terme de cette étape pouvoir éxecuter des programmes utilisateurs multi-thread
@@ -577,13 +580,15 @@ Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait app
  return 0;
 }
 \end{lstlisting}
-
+\newpage
 \subsubsection{Syscall UserThreadJoin}
 Enfin, nous réalisons un dernier appel système, UserThreadJoin afin de forcer un thread à attendre la terminaison d'un thread (autre que lui même ou le thread principal).
 Pour mettre en place ce fonction, nous avons du mettre en place un système de sémaphore dans les précédantes fonctions.
 
 Lors de la création du thread ( \textit{do\_UserThreadCreate(...)}) , nous effectuons plusieurs manipulations  après le Fork. Nous prenons d'abord un sémaphore \textit{await}.
-Il sera libéré à la fin de \textit{StartUserThread} juste avant l'appel à \textit{Run()}. Nous prenons ensuite un second sémaphore \textit{TabSemJoin[t->initStackReg]}.
+Il sera libéré à la fin de \textit{StartUserThread} juste avant l'appel à \textit{Run()}. Ce sémaphore assure la cohérence de la bitmap. En effet, si un autre thread veut effectuer
+un join vers un thread créé plus tôt, ce dernier doit avoir terminé son allocation dans la pile. Si le thread principal veut créer un autre fils, il devra donc attendre que 
+l'allocation du premier soit terminé. Nous prenons ensuite un second sémaphore \textit{TabSemJoin[t->initStackReg]}.
 Si un thread X fait un join vers ce thread, il devra attendre que le semaphore soit libéré par notre thread lors de l'appel à do\_UserThreadExit() pour prendre le sémaphore
 (on prend ce semaphore dans UserThreadJoin(..) ). Ainsi, on force l'ordre d'exécution ( la dépendance voulue !) , en forcant une attente du thread X sur le semaphore 
 corespondant au thread dont on veut dépendre.
@@ -669,7 +674,7 @@ Machine halting!
 \subsection{Déroulement d'une exécution avec dépendance entre 2 threads}
 \begin{figure}[h]
   \begin{center}
-    \includegraphics[scale=0.4]{./nachos_join.png}
+    \includegraphics[scale=0.39]{./nachos_join.png}
    \caption{\label{join} Déroulemet de l'exécution}
   \end{center}
 \end{figure}
