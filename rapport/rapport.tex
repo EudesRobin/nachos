@@ -443,6 +443,8 @@ Les données sont ensuite chargé en mémoire, en utilisant la table des pages c
 Cette mécanique autour des threads est utilisée afin de supporter chaque thread utilisateur par un thread NachOS.
 Nous étudions maintenant \textit{StartProcess(..) , progtest.cc }. Après avoir chargé le programme à exécuter en mémoire,
 les registres sont initialisés(\textit{PCReg, NextPCReg, StackReg}, et les autres registres de NachOS) puis le programme est lancé, grâce à la méthode \textit{Run()}.
+Une fois le programme lancé, chaque thread sera ``lancé'' par un appel à la fonction \textit{Fork}. Cette dernière fait appel à \textit{StackAllocate}, qui se chargera
+de l'allocation dans la pile pour le thread à créer. Les paramètres donnés à la fonction \textit{Fork} ( et donc \textit{StackAllocate} ) seront explicités par la suite.
 \subsubsection{Syscall UserThreadCreate}
 On souhaite maintenant qu’un programme utilisateur puisse créer des threads au niveau utilisateur,
 c’est-à-dire effectuer un appel système \textit{int UserThreadCreate(void f(void *arg), void *arg)}.
