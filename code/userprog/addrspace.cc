@@ -320,7 +320,7 @@ AddrSpace::FreeStack (int numStack)
 int
 AddrSpace::StackValue(int BitmapValue)
 {
-	return PageSize*numPages - 16 - BitmapValue*PageSize;
+	return PageSize*numPages - BitmapValue*PageSize;
 }
 
 //----------------------------------------------------------------------
@@ -331,13 +331,11 @@ AddrSpace::StackValue(int BitmapValue)
 void
 AddrSpace::CheckLastThread ()
 {
-	//printf("Begin CheckLastThread: nbThreads = %d\n",nbThreads);
 	if(nbThreads!=0){
 		askEnd=true;
 		BlockMultiThread->P();
 		askEnd=false;
 	}
-	//printf("End CheckLastThread\n");
 }
 
 bool
