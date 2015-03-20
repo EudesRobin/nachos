@@ -32,6 +32,9 @@ Machine *machine;		// user program memory and registers
 #ifdef CHANGED
 SynchConsole *synchconsole;
 FrameProvider *frameProvider;
+int nbProcess;
+void MajNbProcess(int n);
+int GetNbProcess();
 #endif //CHANGED
 #endif
 
@@ -166,6 +169,7 @@ Initialize (int argc, char **argv)
     machine = new Machine (debugUserProg);	// this must come first
 #ifdef CHANGED
     frameProvider = new FrameProvider(NumPhysPages);
+    nbProcess = 0;
 #endif //CHANGED
 #endif
 
@@ -181,6 +185,16 @@ Initialize (int argc, char **argv)
     postOffice = new PostOffice (netname, rely, 10);
 #endif
 }
+
+#ifdef CHANGED
+void MajNbProcess(int n){
+	nbProcess = nbProcess + n;
+}
+
+int GetNbProcess(){
+	return nbProcess;
+}
+#endif //CHANGED
 
 //----------------------------------------------------------------------
 // Cleanup

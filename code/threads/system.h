@@ -21,6 +21,10 @@ extern void Initialize (int argc, char **argv);	// Initialization,
 						// called before anything else
 extern void Cleanup ();		// Cleanup, called when
 						// Nachos is done.
+#ifdef CHANGED
+extern void MajNbProcess(int n);
+extern int GetNbProcess();
+#endif //CHANGED
 
 extern Thread *currentThread;	// the thread holding the CPU
 extern Thread *threadToBeDestroyed;	// the thread that just finished

@@ -26,16 +26,14 @@ FrameProvider::GetEmptyFrame()
 		return -1;
 	}
 	//Vesrion aléatoire
-	RandomInit(Time());
-	int tmp=Random()%(BitmapSize-1);
-	while(phyMemBitmap->Test(tmp)){
-		tmp=Random()%(BitmapSize-1);
-	}
-	phyMemBitmap->Mark(tmp);
+//	RandomInit(Time());
+//	int tmp=Random()%(BitmapSize-1);
+//	while(phyMemBitmap->Test(tmp)){
+//		tmp=Random()%(BitmapSize-1);
+//	}
+//	phyMemBitmap->Mark(tmp);
 	//Version non aléatoire
-	/*
 	int tmp = phyMemBitmap->Find();
-	*/
 	semFrame->V();
 	return tmp;
 }

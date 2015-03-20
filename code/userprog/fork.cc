@@ -3,6 +3,13 @@
 #include "system.h"
 #include "addrspace.h"
 
+static void StartUserProcess(int f){
+	currentThread->space->InitRegisters ();	// set the initial register values
+	currentThread->space->RestoreState ();	// load page table register
+
+	machine->Run ();		// jump to the user progam
+}
+
 int ForkExec(char *s){
 	OpenFile *executable = fileSystem->Open (s);
 	AddrSpace *space;
@@ -12,18 +19,26 @@ int ForkExec(char *s){
 		printf ("Unable to open file %s\n", s);
 		return -1;
 	}
+
+	Thread *t = new Thread("UserProcess");
+
+	if(t==NULL){
+		printf("Error: Thread non created\n");
+		return -1;
+	}
+
+	MajNbProcess(1);
+	
 	space = new AddrSpace (executable);
-	currentThread->space = space;
+	t->space = space;
 
 	delete executable;		// close file
 
-	space->InitRegisters ();	// set the initial register values
-	space->RestoreState ();	// load page table register
+	t->Fork(StartUserProcess,0);
 
-	machine->Run ();		// jump to the user progam
-	ASSERT (FALSE);		// machine->Run never returns;
-	// the address space exits
-	// by doing the syscall "exit"
+	//Permet de démarrer le processus créé
+	currentThread->Yield();
+
 	return 0;
 }
 
