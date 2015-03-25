@@ -163,7 +163,9 @@ AddrSpace::AddrSpace (OpenFile * executable)
 
 	//Main program's stack marked
 	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
-	stack->Mark(0);
+	for(i=0;i<NbPagesThread;i++){
+		stack->Mark(i);
+	}
 
 	askEnd=false;
 	BlockMultiThread = new Semaphore("BlockMultiThread",0);
@@ -277,13 +279,20 @@ AddrSpace::CheckFreeStack ()
 int
 AddrSpace::AllocStack ()
 {
-	if((stack->NumClear())<=0){
+	SemThread->P();
+	//On veut allouer 4 pages pour chaque thread
+	if((stack->NumClear())<=(NbPagesThread-1)){
 		printf("Stack overflow\n");
 		return -1;
 	}
-	SemThread->P();	
 	int tmp = stack->Find();
-	stack->Mark(tmp);
+	for(int i=1;i<NbPagesThread;i++){
+		if(stack->Test(tmp+i)){
+			printf("Pages block(4) is not available\n");
+			return -1;
+		}
+		stack->Mark(tmp+i);
+	}
 	nbThreads++;
 	SemThread->V();
 	return tmp;
@@ -297,17 +306,19 @@ AddrSpace::AllocStack ()
 void
 AddrSpace::FreeStack (int numStack)
 {
-	if(!stack->Test(numStack)){
-		printf("Error numStack %d\n",numStack);
-		return;
-	}
 	SemThread->P();
+	for(int i=0;i<NbPagesThread;i++){
+		if(!stack->Test(numStack+i)){
+			printf("Error numStack %d\n",numStack);
+			return;
+		}
+		stack->Clear(numStack+i);
+	}
 	nbThreads--;
-	SemThread->V();
 	if(askEnd && nbThreads==0){
 		BlockMultiThread->V();
 	}
-	stack->Clear(numStack);
+	SemThread->V();
 }
 
 

@@ -25,6 +25,7 @@
 #define UserStackSize		1024	// increase this as necessary!
 #else
 #define UserStackSize		2048
+#define NbPagesThread		4
 #endif //CHANGED
 class AddrSpace
 {
