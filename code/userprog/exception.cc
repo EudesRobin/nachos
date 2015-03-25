@@ -128,6 +128,8 @@ ExceptionHandler (ExceptionType which)
 				delete currentThread->space;
 				if(GetNbProcess()>0)
 					currentThread->Finish();
+				else
+					interrupt->Halt ();
 				break;
 			}
 		
