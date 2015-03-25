@@ -288,7 +288,7 @@ AddrSpace::AllocStack ()
 	int tmp = stack->Find();
 	for(int i=1;i<NbPagesThread;i++){
 		if(stack->Test(tmp+i)){
-			printf("Pages block(4) is not available\n");
+			printf("Pages block(%d) is not available\n",NbPagesThread);
 			return -1;
 		}
 		stack->Mark(tmp+i);
