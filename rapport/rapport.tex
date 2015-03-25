@@ -100,45 +100,46 @@ void ConsoleTest (char *in, char *out){
 \subsection{Entrées-sorties synchrones}
 Nous devons maintenant créer une classe \textit{SynchConsole} afin de réaliser les opérations de synchronisation d'entrées/sorties automatiquement :
 \begin{lstlisting}[frame=single]
-
 static Semaphore *readAvail;
 static Semaphore *writeDone;
-static Semaphore *SemPutChar;
+static Semaphore *SemPut;
 static Semaphore *SemGetChar;
-static Semaphore *SemPutString;
 static Semaphore *SemGetString;
 
 static void ReadAvail(int arg) { readAvail->V(); }
 static void WriteDone(int arg) { writeDone->V(); }
 
-SynchConsole::SynchConsole(char *readFile, char *writeFile){
+SynchConsole::SynchConsole(char *readFile, char *writeFile)
+{
 	readAvail = new Semaphore("read avail", 0);
 	writeDone = new Semaphore("write done", 0);
 	console = new Console (readFile, writeFile, ReadAvail, WriteDone, 0);
 
-	SemPutChar = new Semaphore("PutChar", 1);
+	SemPut = new Semaphore("Put", 1);
 	SemGetChar = new Semaphore("GetChar", 1);
-	SemPutString = new Semaphore("PutString", 1);
 	SemGetString = new Semaphore("GetString", 1);
 }
 
-SynchConsole::~SynchConsole(){
+SynchConsole::~SynchConsole()
+{
 	delete console;
 	delete writeDone;
 	delete readAvail;
 }
 
-void SynchConsole::SynchPutChar(const char ch){
-	SemPutChar->P();
+void SynchConsole::SynchPutChar(const char ch)
+{
+	SemPut->P();
 	console->PutChar (ch);
-	writeDone->P ();
-	SemPutChar->V();
+	writeDone->P ();	// wait for write to finish
+	SemPut->V();
 }
 
-char SynchConsole::SynchGetChar(){
+char SynchConsole::SynchGetChar()
+{
 	SemGetChar->P();
 	char ch;
-	readAvail->P ();
+	readAvail->P ();	// wait for character to arrive
 	ch = console->GetChar ();
 	SemGetChar->V();
 	return ch;
@@ -311,43 +312,46 @@ Enfin, les fonctions SynchPutString et SynchGetString sont définies dans \texti
 par le handler associé.
 
 \begin{lstlisting}[frame=single]
-void SynchConsole::SynchPutString(const char s[]){
-SemPutString->P();
-int i;
-for (i=0;i<MAX_STRING_SIZE && s[i]!='\0';i++){
-	if (s[i]=='\0')
-	return;
-	synchconsole->SynchPutChar ((char)s[i]);
-}
-SemPutString->V();
-}
-
-void SynchConsole::SynchGetString(char *s, int n){
-SemGetString->P();
-char c;
-int i;
-
-c = synchconsole->SynchGetChar ();
-if(c==EOF || c=='\n'){
-	s[0]='\0';
-	SemGetString->V();
-	return;
-}
-else
-	s[0] = c;
-for (i=1;i<n;i++){
-	c = synchconsole->SynchGetChar ();
-	if(c==EOF && s[i-1]=='\n')
-		break;
-	else{
-		if(c==EOF)
-			i--;
-		else
-			s[i] = c;
+void SynchConsole::SynchPutString(const char s[])
+{
+	SemPut->P();
+	int i;
+	for (i=0;i<MAX_STRING_SIZE && s[i]!='\0';i++){
+		if (s[i]=='\0')
+			return;		// if end of string, quit
+			console->PutChar ((char)s[i]);
+			writeDone->P ();	// wait for write to finish
 	}
+	SemPut->V();
 }
-s[i]='\0';
-SemGetString->V();
+
+void SynchConsole::SynchGetString(char *s, int n)
+{
+	SemGetString->P();
+	char c;
+	int i;
+
+	c = synchconsole->SynchGetChar ();
+	if(c==EOF || c=='\n'){
+		s[0]='\0';
+		SemGetString->V();
+		return;
+	}
+	else
+		s[0] = c;
+	for (i=1;i<n;i++){
+		c = synchconsole->SynchGetChar ();
+		if(c==EOF && s[i-1]=='\n')
+			break;
+		else{
+			if(c==EOF)
+				i--;
+			else
+				s[i] = c;
+		}
+	}
+	s[i]='\0';
+	SemGetString->V();
 }
 \end{lstlisting}
 La méthode SynchGetString est un peu plus complexe que SynchPutString car nous devons maintenir un comportement :
@@ -545,14 +549,23 @@ machine->Run();
 
 Voici comment est réalisé l'allocation de la mémoire dans la pile pour notre thread:
 \begin{lstlisting}[frame=single]
- int AddrSpace::AllocStack () {
-	if((stack->NumClear())<=0){
+int
+AddrSpace::AllocStack ()
+{
+	SemThread->P();
+	//On veut allouer 4 pages pour chaque thread
+	if((stack->NumClear())<=(NbPagesThread-1)){
 		printf("Stack overflow\n");
 		return -1;
 	}
-	SemThread->P();	
 	int tmp = stack->Find();
-	stack->Mark(tmp);
+	for(int i=1;i<NbPagesThread;i++){
+		if(stack->Test(tmp+i)){
+			printf("Pages block(%d) is not available\n",NbPagesThread);
+			return -1;
+		}
+		stack->Mark(tmp+i);
+	}
 	nbThreads++;
 	SemThread->V();
 	return tmp;
