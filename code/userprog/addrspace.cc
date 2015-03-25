@@ -25,12 +25,6 @@
 #ifdef CHANGED
 #include "synch.h"
 
-//Variables globales
-static bool askEnd=false;
-static Semaphore *BlockMultiThread = new Semaphore("BlockMultiThread",0);
-static Semaphore *SemThread = new Semaphore("SemThread",1);
-static int nbThreads=0;
-
 static void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, int position, TranslationEntry *pageTable,unsigned numPages){
 	if ((numBytes <= 0) ||  (virtualaddr < 0) || ((unsigned)virtualaddr > numPages*PageSize)){
 		printf("Erreur ReadAtVirtual\n");
@@ -170,6 +164,11 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	//Main program's stack marked
 	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
 	stack->Mark(0);
+
+	askEnd=false;
+	BlockMultiThread = new Semaphore("BlockMultiThread",0);
+	SemThread = new Semaphore("SemThread",1);
+	nbThreads=0;
 	#endif //CHANGED
 
 

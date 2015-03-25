@@ -8,9 +8,8 @@
 
 static Semaphore *readAvail;
 static Semaphore *writeDone;
-static Semaphore *SemPutChar;
+static Semaphore *SemPut;
 static Semaphore *SemGetChar;
-static Semaphore *SemPutString;
 static Semaphore *SemGetString;
 
 static void ReadAvail(int arg) { readAvail->V(); }
@@ -22,9 +21,8 @@ SynchConsole::SynchConsole(char *readFile, char *writeFile)
 	writeDone = new Semaphore("write done", 0);
 	console = new Console (readFile, writeFile, ReadAvail, WriteDone, 0);
 
-	SemPutChar = new Semaphore("PutChar", 1);
+	SemPut = new Semaphore("Put", 1);
 	SemGetChar = new Semaphore("GetChar", 1);
-	SemPutString = new Semaphore("PutString", 1);
 	SemGetString = new Semaphore("GetString", 1);
 }
 
@@ -37,10 +35,10 @@ SynchConsole::~SynchConsole()
 
 void SynchConsole::SynchPutChar(const char ch)
 {
-	SemPutChar->P();
+	SemPut->P();
 	console->PutChar (ch);
 	writeDone->P ();	// wait for write to finish
-	SemPutChar->V();
+	SemPut->V();
 }
 
 char SynchConsole::SynchGetChar()
@@ -55,14 +53,15 @@ char SynchConsole::SynchGetChar()
 
 void SynchConsole::SynchPutString(const char s[])
 {
-	SemPutString->P();
+	SemPut->P();
 	int i;
 	for (i=0;i<MAX_STRING_SIZE && s[i]!='\0';i++){
 		if (s[i]=='\0')
 			return;		// if end of string, quit
-		synchconsole->SynchPutChar ((char)s[i]);
+			console->PutChar ((char)s[i]);
+			writeDone->P ();	// wait for write to finish
 	}
-	SemPutString->V();
+	SemPut->V();
 }
 /*
 void SynchConsole::SynchGetString(char *s, int n)

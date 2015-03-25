@@ -17,11 +17,12 @@ void f(void *s)
 	int i;
 	for(i=0;i<N;i++)
 		putstring((char *)s);
+	UserThreadExit();
 }
 
 int main()
 {
 	UserThreadCreate(f, (void *) THIS);
 	f((void*) THAT);
-	Exit(0);
+	Halt();
 }

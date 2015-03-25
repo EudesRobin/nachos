@@ -57,7 +57,11 @@ class AddrSpace
     unsigned int numPages;	// Number of pages in the virtual 
     // address space
 	#ifdef CHANGED
-	BitMap *stack;
+	BitMap *stack;//Variables globales
+	bool askEnd;
+	Semaphore *BlockMultiThread;
+	Semaphore *SemThread;
+	int nbThreads;
 	#endif //CHANGED
 
 };

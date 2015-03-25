@@ -87,6 +87,10 @@ int UserThreadJoin(int t){
 
 
 int do_UserThreadExit(){
+	//On ne finit pas le thread avec un appel à cette fonction lorsque nous sommes dans l'appel principal
+	if(currentThread->initStackReg==0){
+		return 0;
+	}
 	currentThread->space->FreeStack(currentThread->initStackReg);
 	currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
 	if(currentThread->dependance!=-1)

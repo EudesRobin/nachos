@@ -27,8 +27,8 @@ void thread(int *i){
 int main(){
 	int param=-1;
 	int t1 = UserThreadCreate((void (*)(void *))thread,(void *)(&param));
-	int t2 = UserThreadCreate((void (*)(void *))thread,(void *)(&t1));
-	UserThreadJoin(t2);
+	 UserThreadCreate((void (*)(void *))thread,(void *)(&t1));
+	//UserThreadJoin(t2);
 	SynchPutString("Main program terminated\n");
-	Halt();
+	Exit(0);
 }

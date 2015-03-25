@@ -125,6 +125,7 @@ ExceptionHandler (ExceptionType which)
 			}
 			case SC_Exit:{
 				MajNbProcess(-1);
+				currentThread->space->CheckLastThread();
 				delete currentThread->space;
 				if(GetNbProcess()>=0){
 					currentThread->Finish();

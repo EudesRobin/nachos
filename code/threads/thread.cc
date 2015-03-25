@@ -41,6 +41,7 @@ Thread::Thread (const char *threadName)
 #ifdef USER_PROGRAM
 	#ifdef CHANGED
 	dependance=-1;
+	initStackReg=0;
 	#endif //CHANGED
     space = NULL;
     // FBT: Need to initialize special registers of simulator to 0
