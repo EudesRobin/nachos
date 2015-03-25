@@ -24,5 +24,5 @@ int main()
 {
 	UserThreadCreate(f, (void *) THIS);
 	f((void*) THAT);
-	Halt();
+	Exit(0);
 }
