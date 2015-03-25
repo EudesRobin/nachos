@@ -126,10 +126,12 @@ ExceptionHandler (ExceptionType which)
 			case SC_Exit:{
 				MajNbProcess(-1);
 				delete currentThread->space;
-				if(GetNbProcess()>0)
+				if(GetNbProcess()>=0){
 					currentThread->Finish();
-				else
+				}
+				else{
 					interrupt->Halt ();
+				}
 				break;
 			}
 		

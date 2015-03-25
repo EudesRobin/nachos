@@ -3,6 +3,6 @@
 int main()
 {
 	ForkExec("userpages0");
-	PutChar('a');
+	ForkExec("userpages1");
 	Exit(0);
 }

@@ -34,7 +34,7 @@ int ForkExec(char *s){
 
 	delete executable;		// close file
 
-	t->Fork(StartUserProcess,0);
+	t->ForkExec(StartUserProcess,0);
 
 	//Permet de démarrer le processus créé
 	currentThread->Yield();
