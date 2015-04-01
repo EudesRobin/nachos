@@ -163,7 +163,6 @@ AddrSpace::AddrSpace (OpenFile * executable)
 
 	//Main program's stack marked
 	stack = new BitMap(divRoundUp(UserStackSize,PageSize));
-	printf("freestack: %d\n",stack->NumClear());
 	for(i=0;i<NbPagesThread;i++){
 		stack->Mark(i);
 	}

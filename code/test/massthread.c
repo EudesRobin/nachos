@@ -7,13 +7,11 @@ static int numProcess=0;
 void thread(int *i){
 	if(*i!=-1){
 		UserThreadJoin(i[0]);
-		SynchPutString("Process ");
-		SynchPutInt(i[1]);
+		SynchPutString("Thread ");
+		SynchPutInt(i[0]);
 		PutChar('\n');
 	}
 	else{
-		SynchPutString("Process ");
-		SynchPutInt(i[1]);
 		SynchPutString(", Thread initial\n");
 	}	
 	//Calcul sale pour "ralentir" les threads
@@ -33,13 +31,16 @@ void thread(int *i){
 int main()
 {
 	int current=numProcess++;
-	int i,tmp,param[2];
+	int i,tmp,param[2*(NbThread+1)];
 	param[0]=-1;
 	param[1]=current;
-	tmp=UserThreadCreate((void (*)(void *))thread,(void *)(&param));
-	param[0]=tmp;
+	tmp=UserThreadCreate((void (*)(void *))thread,(void *)(param));
+	param[2]=tmp;
+	param[3]=current;
 	for(i=1;i<NbThread;i++){
-		tmp=UserThreadCreate((void (*)(void *))thread,(void *)(&param));
+		tmp=UserThreadCreate((void (*)(void *))thread,(void *)(param+2*i));
+		param[2*(i+1)]=tmp;
+		param[2*(i+1)+1]=current;
 	}
 	Exit(0);
 }

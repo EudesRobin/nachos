@@ -37,7 +37,7 @@
 #ifndef CHANGED
 #define NumPhysPages    32
 #else
-#define NumPhysPages    256
+#define NumPhysPages    1024
 #endif //CHANGED
 #define MemorySize 	(NumPhysPages * PageSize)
 #define TLBSize		4		// if there is a TLB, make it small
