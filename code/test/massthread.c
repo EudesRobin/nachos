@@ -2,22 +2,23 @@
 
 #define NbThread 12
 
+//Variable inutile à supprimer plus tard
 static int numProcess=0;
 
 void thread(int *i){
 	if(*i!=-1){
 		UserThreadJoin(i[0]);
-		SynchPutString("Thread ");
-		SynchPutInt(i[0]);
-		PutChar('\n');
+		//SynchPutString("Thread ");
+		//SynchPutInt(i[0]);
+		//PutChar('\n');
 	}
 	else{
-		SynchPutString(", Thread initial\n");
+		//SynchPutString("Thread initial\n");
 	}	
 	//Calcul sale pour "ralentir" les threads
 	int a=1001;
 	int j;
-	for(j=0;j<1000;j++){
+	for(j=0;j<1500;j++){
 		if(a%2){
 			a=a*2;
 		}

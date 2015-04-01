@@ -2,6 +2,6 @@
 
 int main(){
 	SynchPutString("bon\127our\n");
-	Halt();
+	Exit(0);
 }
 

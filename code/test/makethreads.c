@@ -13,6 +13,6 @@ int main(){
 	SynchPutString("Main program beginning\n");
 	UserThreadCreate((void (*)(void *))thread,(void *)(param));
 	SynchPutString("Main program terminated\n");
-	Halt();
+	Exit(0);
 }
 

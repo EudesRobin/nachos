@@ -5,6 +5,6 @@ int main(){
 	SynchGetInt(&n);
 	SynchPutInt(n);
 	PutChar('\n');
-	Halt();
+	Exit(0);
 }
 

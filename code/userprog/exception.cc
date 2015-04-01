@@ -120,12 +120,14 @@ ExceptionHandler (ExceptionType which)
 			case SC_Halt:{
 				DEBUG ('a', "Shutdown, initiated by user program.\n");
 				currentThread->space->CheckLastThread();
+				delete currentThread->space;
 				interrupt->Halt ();
 				break;
 			}
 			case SC_Exit:{
-				MajNbProcess(-1);
 				currentThread->space->CheckLastThread();
+				MajNbProcess(-1);
+				printf("Processus restants: %d\n",GetNbProcess());
 				delete currentThread->space;
 				if(GetNbProcess()>=0){
 					currentThread->Finish();

@@ -106,7 +106,7 @@ void SynchConsole::SynchGetString(char *s, int n)
 				s[i] = c;
 		}
 	}
-	s[i]='\0';
+	s[i-1]='\0';
 	SemGetString->V();
 }
 

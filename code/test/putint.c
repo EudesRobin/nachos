@@ -7,6 +7,6 @@ void putint(){
 
 int main(){
 	putint();
-	Halt();
+	Exit(0);
 }
 
