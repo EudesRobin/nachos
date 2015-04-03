@@ -209,6 +209,14 @@ ForkExec:
 	j	$31
 	.end ForkExec
 
+	.globl Delay
+	.ent	Delay
+Delay:
+	addiu $2,$0,SC_Delay
+	syscall
+	j	$31
+	.end Delay
+
 #endif //CHANGED
 
 /* dummy function to keep gcc happy */

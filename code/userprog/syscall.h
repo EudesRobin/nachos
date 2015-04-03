@@ -41,6 +41,7 @@
 #define SC_UserThreadExit	18
 #define SC_UserThreadJoin	19
 #define SC_ForkExec		20
+#define SC_Delay		21
 #endif //CHANGED
 
 #ifdef IN_USER_MODE
@@ -181,6 +182,10 @@ void UserThreadJoin(int t);
 /* Create a new process based on the executable s
 */
 int ForkExec(char *s);
+
+/* Sleep for a certain number of seconds (affects all processes)
+*/
+void Delay(int seconds);
 
 #endif //CHANGED
 

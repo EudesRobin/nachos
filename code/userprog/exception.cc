@@ -27,6 +27,7 @@
 #ifdef CHANGED
 #include "userthread.h"
 #include "fork.h"
+#include "sysdep.h"
 #endif //CHANGED
 
 //----------------------------------------------------------------------
@@ -127,7 +128,6 @@ ExceptionHandler (ExceptionType which)
 			case SC_Exit:{
 				currentThread->space->CheckLastThread();
 				MajNbProcess(-1);
-				printf("Processus restants: %d\n",GetNbProcess());
 				delete currentThread->space;
 				if(GetNbProcess()>=0){
 					currentThread->Finish();
@@ -195,6 +195,11 @@ ExceptionHandler (ExceptionType which)
 				int res = ForkExec(buffer);	//On fait appel à SynchPutString de synchconsole
 				machine->WriteRegister (2,res);
 				delete buffer;
+				break;
+			}
+			case SC_Delay:{
+				int n = machine->ReadRegister (4);
+				Delay(n);
 				break;
 			}
 			default:{
