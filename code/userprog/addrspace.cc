@@ -212,6 +212,7 @@ AddrSpace::~AddrSpace ()
 	#ifdef CHANGED
 	unsigned i;
 	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
+		printf("Thread: %d Sem: %d\n",i,this->TabSemJoin[i]->get());
 		//Ligne suivante: pose problème lors du massfork
 		delete this->TabSemJoin[i];
 	}

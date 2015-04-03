@@ -50,6 +50,9 @@ class Semaphore
 
     void P ();			// these are the only operations on a semaphore
     void V ();			// they are both *atomic*
+	#ifdef CHANGED
+	int get();
+	#endif //CHANGED
 
   private:
     const char *name;		// useful for debugging
