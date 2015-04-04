@@ -583,19 +583,17 @@ Le thread utilisateur lancé, nous devons maintenant nous intéresser à son arr
 Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait appel à la fonction suivante :
 
 \begin{lstlisting}[frame=single]
- int do_UserThreadExit(){
-
- // free bitmap page
- currentThread->space->FreeStack(currentThread->initStackReg);
- 
- currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
- 
- if(currentThread->dependance!=-1)
-  currentThread->space->TabSemJoin[currentThread->dependance]->V();
- 
- currentThread->Finish();
- 
- return 0;
+int do_UserThreadExit(){
+	//On ne finit pas le thread avec un appel a cette fonction lorsque nous sommes dans l'appel principal
+	if(currentThread->initStackReg==0){
+		return 0;
+	}
+	currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
+	if(currentThread->dependance!=-1)
+		currentThread->space->TabSemJoin[currentThread->dependance]->V();
+	currentThread->space->FreeStack(currentThread->initStackReg);
+	currentThread->Finish();
+	return 0;
 }
 \end{lstlisting}
 \newpage
@@ -990,8 +988,94 @@ Pour cela, le syscall Exit est légèrement modifié :
 \end{lstlisting}
 
 \subsection{Test du multi-processus}
+\begin{lstlisting}[frame=single]
+ #include "syscall.h"
 
-< DEBUG >
+#define NbProcess 12
+
+int main()
+{
+	int i;
+	for(i=0;i<NbProcess;i++){
+		ForkExec("massthread");
+	}
+	Exit(0);
+}
+
+#massthread...
+
+#include "syscall.h"
+
+#define NbThread 12
+
+void thread(int *i){
+	if(*i!=-1){
+		UserThreadJoin(i[0]);
+		SynchPutString("Thread ");
+		SynchPutInt(i[0]);
+		PutChar('\n');
+	}
+	else{
+		SynchPutString("Thread initial\n");
+	}	
+	//Calcul sale pour "ralentir" les threads
+	int a=1001;
+	int j;
+	for(j=0;j<2000;j++){
+		if(a%2){
+			a=a*2;
+		}
+		else{
+			a=a/2;
+		}
+	}
+	UserThreadExit();
+}
+
+
+
+
+int main()
+{
+	int i,tmp,param[NbThread+1];
+	param[0]=-1;
+	tmp=UserThreadCreate((void (*)(void *))thread,(void *)(param));
+	param[1]=tmp;
+	for(i=1;i<NbThread;i++){
+		tmp=UserThreadCreate((void (*)(void *))thread,(void *)(param+i));
+		param[i+1]=tmp;
+	}
+	Exit(0);
+}
+\end{lstlisting}
+
+Nous créons donc 12 processus lançant chacun 12 threads. Voici l'affichage :
+
+\begin{verbatim}
+ eudes@laptop:~/s2-ricm4/aas/nachos/code/build$ ./nachos-step2 -rs -x ./massfork
+Thread initial
+Thread initial
+...
+Thread Thread 12
+12
+Thread 12
+Thread 12
+Thread 12
+Thread 12
+Thread 12
+Thread 12
+Thread 12
+Thread 12
+Thread 12
+Thread 12
+Thread 16
+...
+Thread 44
+Thread 44
+Thread 44
+Machine halting!
+\end{verbatim}
+
 \newpage
 \section{Conclusion}
 Ce projet nous aura permit de voir les notions principales en oeuvre dans les systèmes actuels : le multi processus, et le multi thread. Nous avons put par ailleurs expérimenter un système de pagination, certe basique, mais néenmoins fonctionnel.
