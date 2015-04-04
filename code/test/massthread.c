@@ -5,12 +5,12 @@
 void thread(int *i){
 	if(*i!=-1){
 		UserThreadJoin(i[0]);
-		//SynchPutString("Thread ");
-		//SynchPutInt(i[0]);
-		//PutChar('\n');
+		SynchPutString("Thread ");
+		SynchPutInt(i[0]);
+		PutChar('\n');
 	}
 	else{
-		//SynchPutString("Thread initial\n");
+		SynchPutString("Thread initial\n");
 	}	
 	//Calcul sale pour "ralentir" les threads
 	int a=1001;

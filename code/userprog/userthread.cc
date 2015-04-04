@@ -95,6 +95,8 @@ int do_UserThreadExit(){
 	currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
 	if(currentThread->dependance!=-1)
 		currentThread->space->TabSemJoin[currentThread->dependance]->V();
+	if(currentThread->space->unlockEnd)
+		currentThread->space->BlockMultiThread->V();
 	currentThread->Finish();
 	return 0;
 }

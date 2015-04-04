@@ -168,6 +168,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	}
 
 	askEnd=false;
+	unlockEnd=false;
 	BlockMultiThread = new Semaphore("BlockMultiThread",0);
 	SemThread = new Semaphore("SemThread",1);
 	nbThreads=0;
@@ -212,8 +213,6 @@ AddrSpace::~AddrSpace ()
 	#ifdef CHANGED
 	unsigned i;
 	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
-		printf("Thread: %d Sem: %d\n",i,this->TabSemJoin[i]->get());
-		//Ligne suivante: pose problème lors du massfork
 		delete this->TabSemJoin[i];
 	}
 	for(i=0;i<numPages;i++){
@@ -318,7 +317,7 @@ AddrSpace::FreeStack (int numStack)
 	}
 	nbThreads--;
 	if(askEnd && nbThreads==0){
-		BlockMultiThread->V();
+		unlockEnd=true;
 	}
 	SemThread->V();
 }
