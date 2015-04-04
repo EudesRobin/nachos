@@ -120,6 +120,7 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	   numPages, size);
 
 	#ifdef CHANGED
+	// if you don't have enough space in memory, you won't be able to initialize addrspace
 	stackOverflow=(unsigned)frameProvider->NumAvailFrame()<numPages;
 	if(stackOverflow)
 		return;
