@@ -750,12 +750,53 @@ Nous vérifions dans un premier temps que l'adresse à traduire est ``valide'' :
 On remarque que l'on écrit en mémoire par bloc de 4 octets ( un word , 32 bits ) et l'utilisation d'un buffer ( into ). On note par ailleurs une sauvegarde puis une restauration
 des informations de la page table.
 
-On remplace ensuite les appels à ReadAt par ReadAtVirtual :
+On remplace ensuite les appels à ReadAt par ReadAtVirtual, dans le constructeur d'AddrSpace :
 
 \begin{lstlisting}[frame=single]
- 
+[...]
+    if (noffH.code.size > 0)
+      {
+	  DEBUG ('a', "Initializing code segment, at 0x%x, size %d\n",
+		 noffH.code.virtualAddr, noffH.code.size);
+	#ifndef CHANGED
+	  executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
+			      noffH.code.size, noffH.code.inFileAddr);
+	#else
+	ReadAtVirtual(executable, noffH.code.virtualAddr, noffH.code.size, noffH.code.inFileAddr, pageTable, numPages);
+	#endif //CHANGED
+      }
+    if (noffH.initData.size > 0)
+      {
+	  DEBUG ('a', "Initializing data segment, at 0x%x, size %d\n",
+		 noffH.initData.virtualAddr, noffH.initData.size);
+	#ifndef CHANGED
+	  executable->ReadAt (&
+			      (machine->mainMemory
+			       [noffH.initData.virtualAddr]),
+			      noffH.initData.size, noffH.initData.inFileAddr);
+	#else
+	ReadAtVirtual(executable, noffH.initData.virtualAddr, noffH.initData.size, noffH.initData.inFileAddr, pageTable, numPages);
+	#endif //CHANGED
+      }
 \end{lstlisting}
 
+En modifiant la page table pour que la page i soit mappé sur la page physique i+1, voici ce que nous observons au debugger :
+
+\begin{verbatim}
+  Avec l'adresse physique placee a i:
+
+Reading VA 0x14, size 4
+Translate 0x14, read: phys addr = 0x14 value read = 0000000c
+
+Avec l'adresse physique placee a i+1:
+
+Reading VA 0x14, size 4
+Translate 0x14, read: phys addr = 0x94 value read = 0000000c
+\end{verbatim}
+
+\vspace{0.5cm}
+
+Conclusion: l'adresse physique est donc décalée de 0x80. Cela correspond en base 10 à 128, soit la taille d'une page.
 
 \end{document}
 
