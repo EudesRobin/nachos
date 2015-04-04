@@ -577,7 +577,7 @@ AddrSpace::AllocStack ()
 
 On recherche la première page libre, on la marque comme ``occupée''. Un compteur du nombre de thread est incrémenté.
 Ce dernier empeche le syscall Halt d'arrêter NachOS tant qu'un thread utilisateur existe ( et n'a pas terminé ).
-\newpage
+
 \subsubsection{Syscall UserThreadExit}
 Le thread utilisateur lancé, nous devons maintenant nous intéresser à son arrêt.
 Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait appel à la fonction suivante :
