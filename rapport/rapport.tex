@@ -40,6 +40,9 @@ comprendre les concepts entrant en jeu lors de la réalisation d'un système d'e
 
 Dans un premier temps, nous allons nous intéresser au fonctionnement d'un appel système, comment le système les détecte, les gère.
 Dans une seconde partie, nous étudierons le multithreading, et de façon plus générale la gestion des threads par NachOS.
+Enfin, dans un troisième chapitre, nous chercherons à mettre en place un système de gestion de mémoire par la pagination.
+Nous étudirons également la gestion de plusieurs processus.
+
 
 \newpage
 \section{Étape 2 : Etude d'un syscall}
@@ -574,7 +577,7 @@ AddrSpace::AllocStack ()
 
 On recherche la première page libre, on la marque comme ``occupée''. Un compteur du nombre de thread est incrémenté.
 Ce dernier empeche le syscall Halt d'arrêter NachOS tant qu'un thread utilisateur existe ( et n'a pas terminé ).
-\newpage
+
 \subsubsection{Syscall UserThreadExit}
 Le thread utilisateur lancé, nous devons maintenant nous intéresser à son arrêt.
 Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait appel à la fonction suivante :
@@ -695,4 +698,308 @@ Machine halting!
 \end{figure}
 
 On peut par ailleurs noter que cette exécution est englobé dans un thread principal, comme l'a montré notre trace d'exécution.
+\newpage
+\section{Étape 4: NachOS et la pagination }
+\subsection{Adressage Virtuel par une table des pages}
+Initialement, un processus avait accès à la mémoire physique via la fonction \textit{ReadAt}.
+Nous adressions donc directement la mémoire physique. Nous voulons maintenant accéder à la mémoire au travers d'un mécanisme de translation d'une adresse virtuelle vers une adresse physique.
+La translation vers l'adresse physique est réalisée par l'OS, les programmes utilisateurs fonctionnent quant à eux uniquement avec les adresses virtuelles. NachOS devra donc assurer la traduction des adresses
+virtuelles, si nous voulons pouvoir utiliser un mécanisme de pagination.
+
+Pour rappel, dans un OS ``complexe'', une adresse virtuelle se compose d'une série d'offset qui indiqueront l'index à lire dans le Page Directory, le ou les Page Table, et un dernier offset qui indiquera quand commencent
+nos données dans la Frame (bloc mémoire).
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.39]{./pgtable.png}
+   \caption{\label{pgtable}Mécanisme d'adressage}
+  \end{center}
+\end{figure}
+source : http://www.scs.stanford.edu/05au-cs240c/lab/i386/s05\_03.htm
+\vspace{0.5cm}
+
+Dans NachOS, et pour l'instant, ce mécanisme est simplifié, nos adresses virtuelles indiquent seulement un numéro de page, et le déplacement dans la Frame.
+Nous avons donc implémentée la fonction \textit{ReadAtVirtual}, qui à la différence de \textit{ReadAt}, écrit dans l'espace d'adressage virtuel :
+
+\begin{lstlisting}[frame=single]
+ static void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, int position, TranslationEntry *pageTable,unsigned numPages){
+	if ((numBytes <= 0) ||  (virtualaddr < 0) || ((unsigned)virtualaddr > numPages*PageSize)){
+		printf("Erreur ReadAtVirtual\n");
+		return;
+	}
+	int numPages_old = machine->pageTableSize;
+	TranslationEntry *page_old = machine->pageTable;
+	char *into = new char[numBytes+(numBytes%4)];
+	executable->ReadAt(into,numBytes,position);
+	int i;
+
+	machine->pageTable = pageTable ;
+	machine->pageTableSize = numPages ;
+	
+	for(i=0;i<numBytes;i+=4){
+		machine->WriteMem((int)(virtualaddr+i), 4, (int)(*(int *)(into+i)));
+	}
+
+	machine->pageTable = page_old ;
+	machine->pageTableSize = numPages_old ;
+
+	delete [] into;
+}
+\end{lstlisting}
+
+Nous vérifions dans un premier temps que l'adresse à traduire est ``valide'' : positive et inférieure à la valeur maximale adressée par la table.
+On remarque que l'on écrit en mémoire par bloc de 4 octets ( un word , 32 bits ) et l'utilisation d'un buffer ( into ). On note par ailleurs une sauvegarde puis une restauration
+des informations de la page table.
+
+On remplace ensuite les appels à ReadAt par ReadAtVirtual, dans le constructeur d'AddrSpace :
+
+\begin{lstlisting}[frame=single]
+[...]
+    if (noffH.code.size > 0)
+      {
+	  DEBUG ('a', "Initializing code segment, at 0x%x, size %d\n",
+		 noffH.code.virtualAddr, noffH.code.size);
+	#ifndef CHANGED
+	  executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
+			      noffH.code.size, noffH.code.inFileAddr);
+	#else
+	ReadAtVirtual(executable, noffH.code.virtualAddr, noffH.code.size, noffH.code.inFileAddr, pageTable, numPages);
+	#endif //CHANGED
+      }
+    if (noffH.initData.size > 0)
+      {
+	  DEBUG ('a', "Initializing data segment, at 0x%x, size %d\n",
+		 noffH.initData.virtualAddr, noffH.initData.size);
+	#ifndef CHANGED
+	  executable->ReadAt (&
+			      (machine->mainMemory
+			       [noffH.initData.virtualAddr]),
+			      noffH.initData.size, noffH.initData.inFileAddr);
+	#else
+	ReadAtVirtual(executable, noffH.initData.virtualAddr, noffH.initData.size, noffH.initData.inFileAddr, pageTable, numPages);
+	#endif //CHANGED
+      }
+\end{lstlisting}
+
+En modifiant la page table pour que la page i soit mappé sur la page physique i+1, voici ce que nous observons au debugger :
+
+\begin{verbatim}
+  Avec l'adresse physique placee a i:
+
+Reading VA 0x14, size 4
+Translate 0x14, read: phys addr = 0x14 value read = 0000000c
+
+Avec l'adresse physique placee a i+1:
+
+Reading VA 0x14, size 4
+Translate 0x14, read: phys addr = 0x94 value read = 0000000c
+\end{verbatim}
+
+\vspace{0.5cm}
+
+Conclusion: l'adresse physique est donc décalée de 0x80. Cela correspond en base 10 à 128, soit la taille d'une page.
+
+\newpage
+\subsection{Mise en place d'un Frame Provider}
+Plus généralement, il est utile d’encapsuler l’allocation des pages physiques aux pages virtuelles dans une
+classe spéciale FrameProvider. C’est alors à cette classe de remettre à zéro les pages fournies, et
+non plus au constructeur de AddrSpace. Nous allons donc nous atteler à la mise en place de cette classe.
+Cette dernière utilisera une bitmap  pour savoir quelle frames sont disponibles. Elle se chargera de les initialiser, puis de les libérer le moment venu.
+
+\begin{lstlisting}[frame=single]
+#include "frameprovider.h"
+#include "synch.h"
+#include "sysdep.h"
+
+static Semaphore *semFrame = new Semaphore("semFrame",1);
+
+ FrameProvider::FrameProvider(int NumPages)
+{
+	phyMemBitmap = new BitMap(NumPages);
+	BitmapSize = NumPages;
+}
+
+FrameProvider::~FrameProvider(){
+	delete phyMemBitmap;
+}
+
+int
+FrameProvider::GetEmptyFrame()
+{
+	semFrame->P();
+	if((phyMemBitmap->NumClear())<=0){
+		printf("Stack overflow\n");
+		return -1;
+	}
+
+	//Version non aleatoire - retourne le 1er
+	int tmp = phyMemBitmap->Find();
+	semFrame->V();
+	return tmp;
+}
+
+void
+FrameProvider::ReleaseFrame(int numFrame)
+{
+	if(!phyMemBitmap->Test(numFrame)){
+		printf("Error numFrame %d\n",numFrame);
+		return;
+	}
+	// liberation frame
+	phyMemBitmap->Clear(numFrame);
+}
+
+int
+FrameProvider::NumAvailFrame()
+{
+	// maj nb frame dispo
+	return phyMemBitmap->NumClear();
+}
+\end{lstlisting}
+
+\newpage
+La classe AddrSpace s'en retrouve donc modifiée, puisque ce n'est plus à elle de gérer l'allocation des Frames.
+\begin{lstlisting}[frame=single]
+ pageTable = new TranslationEntry[numPages];
+    for (i = 0; i < numPages; i++)
+      {
+	  pageTable[i].virtualPage = i;	
+	#ifndef CHANGED
+	  pageTable[i].physicalPage = i;// virtual page # = phys page #
+	#else
+	  pageTable[i].physicalPage = frameProvider->GetEmptyFrame();
+	#endif //CHANGED
+	  pageTable[i].valid = TRUE;
+	  pageTable[i].use = FALSE;
+	  pageTable[i].dirty = FALSE;
+	  pageTable[i].readOnly = FALSE;
+	  // if the code segment was entirely on 
+	  // a separate page, we could set its 
+	  // pages to be read-only
+      }
+\end{lstlisting}
+
+Le Frame Provider ne doit pas être lié à un processus, mais à l'OS. Aussi, nous l'instancions dans \textit{Initialize  ( fichier system.cc )}
+
+\begin{lstlisting}[frame=single]
+ #ifdef CHANGED
+    frameProvider = new FrameProvider(NumPhysPages);
+    nbProcess = 0;
+#endif //CHANGED
+\end{lstlisting}
+
+Enfin, lors de la terminaison d'un processus et la supression de son espace mémoire associé, nous libérons donc les frames occupées par chaque page :
+
+\begin{lstlisting}[frame=single]
+ AddrSpace::~AddrSpace ()
+{
+	#ifdef CHANGED
+	unsigned i;
+	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
+		printf("Thread: %d Sem: %d\n",i,this->TabSemJoin[i]->get());
+		delete this->TabSemJoin[i];
+	}
+	for(i=0;i<numPages;i++){
+		frameProvider->ReleaseFrame(pageTable[i].physicalPage);
+	}
+	delete stack;
+	#endif //CHANGED
+  delete [] pageTable;
+}
+\end{lstlisting}
+\newpage
+\subsection{Le multi processus}
+Nous souhaitons maintenant pouvoir lancer simultanément plusieurs processus lançant eux même plusieurs thread.
+Cela implique donc que chaque processus doit avoir un espace mémoire isolé des autres, dans lequel ses threads se partagent l'espace.
+
+Afin de réaliser cela, un syscall ForkExec est créé, il prend en paramètre le nom du programme a exécuter. Ce syscall se chargera de créer un espace mémoire propre au processus
+et de ratacher un thread principal à cet espace mémoire avant se forker. Les mécaniques habituelles des syscall précédants sont mises en oeuvre. Voici le ``case''  au niveau de L'ExceptionHandler :
+
+\begin{lstlisting}[frame=single]
+case SC_ForkExec:{
+	char *buffer=new char[MAX_STRING_SIZE];
+	int s = machine->ReadRegister (4);
+	//L'adresse du string a inserer est dans le registre 4
+	copyStringFromMachine(s, buffer, MAX_STRING_SIZE);
+	int res = ForkExec(buffer);
+	machine->WriteRegister (2,res);
+	delete buffer;
+	break;
+\end{lstlisting}
+
+Lors du syscall, nous appelons la fonction \textit{ForkExec} qui va créer l'espace mémoire pour notre nouveau processus et créer le thread principal associé au programme à lancer
+dans ce nouvel espace mémoire.
+
+\begin{lstlisting}[frame=single]
+ int ForkExec(char *s){
+	OpenFile *executable = fileSystem->Open (s);
+	AddrSpace *space;
+
+	if (executable == NULL)
+	{
+		printf ("Unable to open file %s\n", s);
+		return -1;
+	}
+
+	Thread *t = new Thread("UserProcess");
+
+	if(t==NULL){
+		printf("Error: Thread non created\n");
+		return -1;
+	}
+
+	MajNbProcess(1);
+	
+	space = new AddrSpace (executable);
+	t->space = space;
+
+	delete executable;		// close file
+
+	t->ForkExec(StartUserProcess,0);
+
+	//Permet de demarrer le processus cree
+	currentThread->Yield();
+
+	return 0;
+}
+\end{lstlisting}
+
+On peut noter un appel à la fonction \textit{MajNbProcess}, qui maintient un compteur du nombre de processus en cours d'exécution sur l'OS.
+\begin{lstlisting}[frame=single]
+ void MajNbProcess(int n){
+	nbProcess = nbProcess + n;
+}
+\end{lstlisting}
+\newpage
+En effet, au même titre que nous voulions arrêter la machine lorsque tout les thread s'étaient terminés, nous voulons généraliser cette politique aux processus.
+Pour cela, le syscall Exit est légèrement modifié :
+
+\begin{lstlisting}[frame=single]
+ 			case SC_Exit:{
+				currentThread->space->CheckLastThread();
+				MajNbProcess(-1);
+				delete currentThread->space;
+				if(GetNbProcess()>=0){
+					currentThread->Finish();
+				}
+				else{
+					interrupt->Halt ();
+				}
+				break;
+			}
+\end{lstlisting}
+
+\subsection{Test du multi-processus}
+
+< DEBUG >
+\newpage
+\section{Conclusion}
+Ce projet nous aura permit de voir les notions principales en oeuvre dans les systèmes actuels : le multi processus, et le multi thread. Nous avons put par ailleurs expérimenter un système de pagination, certe basique, mais néenmoins fonctionnel.
+Ces notions sont des piliers dans les systèmes d'exploitation actuels, il est important d'en comprendre le fonctionnement. Nous avous eut à faire beaucoup d'introspections sur notre code au fur et à mesure du projet, certaines notions
+mal comprises dans un premier temps se révellant par la suite cruciales.
+
+Par ailleurs, il était important que chaque membre du groupe comprenne le code écrit par un autre, aussi nous avons réalisés au cours du projet plusieurs bilans,
+le rapport a été écrit avant autant de clareté que possible afin qu'aucun point ne soit laissé dans l'ombre, sans pour autant se perdre dans des détails d'implémentations propres à NachOS.
+
 \end{document}
+
