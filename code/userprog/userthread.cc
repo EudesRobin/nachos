@@ -91,12 +91,10 @@ int do_UserThreadExit(){
 	if(currentThread->initStackReg==0){
 		return 0;
 	}
-	currentThread->space->FreeStack(currentThread->initStackReg);
 	currentThread->space->TabSemJoin[currentThread->initStackReg]->V();
 	if(currentThread->dependance!=-1)
 		currentThread->space->TabSemJoin[currentThread->dependance]->V();
-	if(currentThread->space->unlockEnd)
-		currentThread->space->BlockMultiThread->V();
+	currentThread->space->FreeStack(currentThread->initStackReg);
 	currentThread->Finish();
 	return 0;
 }

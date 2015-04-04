@@ -168,7 +168,6 @@ AddrSpace::AddrSpace (OpenFile * executable)
 	}
 
 	askEnd=false;
-	unlockEnd=false;
 	BlockMultiThread = new Semaphore("BlockMultiThread",0);
 	SemThread = new Semaphore("SemThread",1);
 	nbThreads=0;
@@ -317,7 +316,7 @@ AddrSpace::FreeStack (int numStack)
 	}
 	nbThreads--;
 	if(askEnd && nbThreads==0){
-		unlockEnd=true;
+		BlockMultiThread->V();
 	}
 	SemThread->V();
 }
