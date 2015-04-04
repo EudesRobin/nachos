@@ -907,8 +907,99 @@ Enfin, lors de la terminaison d'un processus et la supression de son espace mém
   delete [] pageTable;
 }
 \end{lstlisting}
+\newpage
+\subsection{Le multi processus}
+Nous souhaitons maintenant pouvoir lancer simultanément plusieurs processus lançant eux même plusieurs thread.
+Cela implique donc que chaque processus doit avoir un espace mémoire isolé des autres, dans lequel ses threads se partagent l'espace.
 
+Afin de réaliser cela, un syscall ForkExec est créé, il prend en paramètre le nom du programme a exécuter. Ce syscall se chargera de créer un espace mémoire propre au processus
+et de ratacher un thread principal à cet espace mémoire avant se forker. Les mécaniques habituelles des syscall précédants sont mises en oeuvre. Voici le ``case''  au niveau de L'ExceptionHandler :
 
+\begin{lstlisting}[frame=single]
+case SC_ForkExec:{
+	char *buffer=new char[MAX_STRING_SIZE];
+	int s = machine->ReadRegister (4);
+	//L'adresse du string a inserer est dans le registre 4
+	copyStringFromMachine(s, buffer, MAX_STRING_SIZE);
+	int res = ForkExec(buffer);
+	machine->WriteRegister (2,res);
+	delete buffer;
+	break;
+\end{lstlisting}
+
+Lors du syscall, nous appelons la fonction \textit{ForkExec} qui va créer l'espace mémoire pour notre nouveau processus et créer le thread principal associé au programme à lancer
+dans ce nouvel espace mémoire.
+
+\begin{lstlisting}[frame=single]
+ int ForkExec(char *s){
+	OpenFile *executable = fileSystem->Open (s);
+	AddrSpace *space;
+
+	if (executable == NULL)
+	{
+		printf ("Unable to open file %s\n", s);
+		return -1;
+	}
+
+	Thread *t = new Thread("UserProcess");
+
+	if(t==NULL){
+		printf("Error: Thread non created\n");
+		return -1;
+	}
+
+	MajNbProcess(1);
+	
+	space = new AddrSpace (executable);
+	t->space = space;
+
+	delete executable;		// close file
+
+	t->ForkExec(StartUserProcess,0);
+
+	//Permet de demarrer le processus cree
+	currentThread->Yield();
+
+	return 0;
+}
+\end{lstlisting}
+
+On peut noter un appel à la fonction \textit{MajNbProcess}, qui maintient un compteur du nombre de processus en cours d'exécution sur l'OS.
+\begin{lstlisting}[frame=single]
+ void MajNbProcess(int n){
+	nbProcess = nbProcess + n;
+}
+\end{lstlisting}
+\newpage
+En effet, au même titre que nous voulions arrêter la machine lorsque tout les thread s'étaient terminés, nous voulons généraliser cette politique aux processus.
+Pour cela, le syscall Exit est légèrement modifié :
+
+\begin{lstlisting}[frame=single]
+ 			case SC_Exit:{
+				currentThread->space->CheckLastThread();
+				MajNbProcess(-1);
+				delete currentThread->space;
+				if(GetNbProcess()>=0){
+					currentThread->Finish();
+				}
+				else{
+					interrupt->Halt ();
+				}
+				break;
+			}
+\end{lstlisting}
+
+\subsection{Test du multi-processus}
+
+< DEBUG >
+\newpage
+\section{Conclusion}
+Ce projet nous aura permit de voir les notions principales en oeuvre dans les systèmes actuels : le multi processus, et le multi thread. Nous avons put par ailleurs expérimenter un système de pagination, certe basique, mais néenmoins fonctionnel.
+Ces notions sont des piliers dans les systèmes d'exploitation actuels, il est important d'en comprendre le fonctionnement. Nous avous eut à faire beaucoup d'introspections sur notre code au fur et à mesure du projet, certaines notions
+mal comprises dans un premier temps se révellant par la suite cruciales.
+
+Par ailleurs, il était important que chaque membre du groupe comprenne le code écrit par un autre, aussi nous avons réalisés au cours du projet plusieurs bilans,
+le rapport a été écrit avant autant de clareté que possible afin qu'aucun point ne soit laissé dans l'ombre, sans pour autant se perdre dans des détails d'implémentations propres à NachOS.
 
 \end{document}
 
