@@ -40,6 +40,8 @@ comprendre les concepts entrant en jeu lors de la réalisation d'un système d'e
 
 Dans un premier temps, nous allons nous intéresser au fonctionnement d'un appel système, comment le système les détecte, les gère.
 Dans une seconde partie, nous étudierons le multithreading, et de façon plus générale la gestion des threads par NachOS.
+Enfin, dans un troisième chapitre, nous chercherons à mettre en place un système de gestion de mémoire par la pagination.
+
 
 \newpage
 \section{Étape 2 : Etude d'un syscall}
@@ -695,4 +697,65 @@ Machine halting!
 \end{figure}
 
 On peut par ailleurs noter que cette exécution est englobé dans un thread principal, comme l'a montré notre trace d'exécution.
+\newpage
+\section{Étape 4: NachOS et la pagination }
+\subsection{Adressage Virtuel par une table des pages}
+Initialement, un processus avait accès à la mémoire physique via la fonction \textit{ReadAt}.
+Nous adressions donc directement la mémoire physique. Nous voulons maintenant accéder à la mémoire au travers d'un mécanisme de translation entre une adresse virtuelle et une adresse physique.
+La translation vers l'adresse physique est réalisée par l'OS, les programmes utilisateurs fonctionnent quant à eux uniquement avec les adresses virtuelles. NachOS devra donc assurer la traduction des adresses
+virtuelles, si nous voulons pouvoir utiliser un mécanisme de pagination.
+
+Pour rappel, dans un OS ``complexe'', une adresse virtuelle se compose d'une série d'offset qui indiqueront l'index à lire dans le Page Directory, les Page Table, et un dernier offset qui indiquera quand commencent
+nos données dans la Frame (bloc mémoire).
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.39]{./pgtable.png}
+   \caption{\label{pgtable}Mécanisme d'adressage}
+  \end{center}
+\end{figure}
+source : http://www.scs.stanford.edu/05au-cs240c/lab/i386/s05\_03.htm
+\vspace{0.5cm}
+
+Dans NachOS ce mécanisme est simplifié, nos adresses virtuelles indiquent seulement un numéro de page, et le déplacement dans la Frame.
+Nous avons donc implémentée la fonction \textit{ReadAtVirtual}, qui à la différence de \textit{ReadAt}, écrit dans l'espace d'adressage virtuel :
+
+\begin{lstlisting}[frame=single]
+ static void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, int position, TranslationEntry *pageTable,unsigned numPages){
+	if ((numBytes <= 0) ||  (virtualaddr < 0) || ((unsigned)virtualaddr > numPages*PageSize)){
+		printf("Erreur ReadAtVirtual\n");
+		return;
+	}
+	int numPages_old = machine->pageTableSize;
+	TranslationEntry *page_old = machine->pageTable;
+	char *into = new char[numBytes+(numBytes%4)];
+	executable->ReadAt(into,numBytes,position);
+	int i;
+
+	machine->pageTable = pageTable ;
+	machine->pageTableSize = numPages ;
+	
+	for(i=0;i<numBytes;i+=4){
+		machine->WriteMem((int)(virtualaddr+i), 4, (int)(*(int *)(into+i)));
+	}
+
+	machine->pageTable = page_old ;
+	machine->pageTableSize = numPages_old ;
+
+	delete [] into;
+}
+\end{lstlisting}
+
+Nous vérifions dans un premier temps que l'adresse à traduire est ``valide'' : positive et inférieure à la valeur maximale adressée par la table.
+On remarque que l'on écrit en mémoire par bloc de 4 octets ( un word , 32 bits ) et l'utilisation d'un buffer ( into ). On note par ailleurs une sauvegarde puis une restauration
+des informations de la page table.
+
+On remplace ensuite les appels à ReadAt par ReadAtVirtual :
+
+\begin{lstlisting}[frame=single]
+ 
+\end{lstlisting}
+
+
 \end{document}
+
