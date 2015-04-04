@@ -22,7 +22,7 @@ FrameProvider::GetEmptyFrame()
 {
 	semFrame->P();
 	if((phyMemBitmap->NumClear())<=0){
-		printf("Stack overflow\n");
+		semFrame->V();
 		return -1;
 	}
 	//Vesrion aléatoire

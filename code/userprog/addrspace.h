@@ -42,6 +42,7 @@ class AddrSpace
 	//L'utilisateur utilise au plus divRoundUp(UserStackSize,PageSize) threads concurrents 
 	Semaphore *TabSemJoin[divRoundUp(UserStackSize,PageSize)];
 	bool CheckFreeStack ();
+	bool StackOverflow ();
 	int AllocStack ();
 	void FreeStack (int numStack);
 	int StackValue(int BitmapValue);
@@ -60,6 +61,7 @@ class AddrSpace
 	#ifdef CHANGED
 	BitMap *stack;//Variables globales
 	bool askEnd;
+	bool stackOverflow;
 	Semaphore *BlockMultiThread;
 	Semaphore *SemThread;
 	int nbThreads;

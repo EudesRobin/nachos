@@ -119,6 +119,11 @@ AddrSpace::AddrSpace (OpenFile * executable)
     DEBUG ('a', "Initializing address space, num pages %d, size %d\n",
 	   numPages, size);
 
+	#ifdef CHANGED
+	stackOverflow=(unsigned)frameProvider->NumAvailFrame()<numPages;
+	if(stackOverflow)
+		return;
+	#endif //CHANGED
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++)
@@ -209,19 +214,23 @@ AddrSpace::AddrSpace (OpenFile * executable)
 
 AddrSpace::~AddrSpace ()
 {
-	#ifdef CHANGED
-	unsigned i;
-	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
-		delete this->TabSemJoin[i];
-	}
-	for(i=0;i<numPages;i++){
-		frameProvider->ReleaseFrame(pageTable[i].physicalPage);
-	}
-	delete stack;
-	#endif //CHANGED
   // LB: Missing [] for delete
   // delete pageTable;
+	#ifndef CHANGED
   delete [] pageTable;
+	#else
+	if(!stackOverflow){
+		unsigned i;
+		for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
+			delete this->TabSemJoin[i];
+		}
+		for(i=0;i<stackOverflow;i++){
+			frameProvider->ReleaseFrame(pageTable[i].physicalPage);
+		}
+		delete stack;
+		delete [] pageTable;
+	}
+	#endif //CHANGED
   // End of modification
 }
 
@@ -271,6 +280,19 @@ AddrSpace::CheckFreeStack ()
 }
 
 //----------------------------------------------------------------------
+// AddrSpace::StackOverflow
+//      If all the pages are allocated in the memory correctly,
+//	returns false.
+//	Else true.
+//----------------------------------------------------------------------
+
+bool
+AddrSpace::StackOverflow ()
+{
+	return stackOverflow;
+}
+
+//----------------------------------------------------------------------
 // AddrSpace::AllocStack
 //      If there is a place in the stack that is free, returns a free
 //      position in the stack. If it does'nt exist, returns -1.
@@ -282,7 +304,7 @@ AddrSpace::AllocStack ()
 	SemThread->P();
 	//On veut allouer 4 pages pour chaque thread
 	if((stack->NumClear())<=(NbPagesThread-1)){
-		printf("Stack overflow\n");
+		printf("Stack overflow pagetable\n");
 		return -1;
 	}
 	int tmp = stack->Find();
