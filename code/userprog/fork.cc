@@ -34,6 +34,14 @@ int ForkExec(char *s){
 
 	delete executable;		// close file
 
+	if(space->StackOverflow()){
+		printf("Error: memory full, the process could not be started\n");
+		delete space;
+		delete t;
+		MajNbProcess(-1);
+		return -1;
+	}
+
 	t->ForkExec(StartUserProcess,0);
 
 	//Permet de démarrer le processus créé
