@@ -33,15 +33,15 @@
 \tableofcontents
 \newpage
 \section{Introduction}
-Ce projet a été réalisé dans le cadre de notre 4ème année d'étude à Polytech, avec la spécialisation ``systèmes et réseaux''.
+Ce projet a été mené dans le cadre de notre 4ème année d'études à Polytech, avec la spécialisation ``systèmes et réseaux''.
 En réalisant ce projet, nous avons pu mettre en pratique l'ensemble des connaissances engrangées au cours de nos parcours et ainsi
 comprendre les concepts entrant en jeu lors de la réalisation d'un système d'exploitation.
 \vspace{0.5cm}
 
-Dans un premier temps, nous allons nous intéresser au fonctionnement d'un appel système, comment le système les détecte, les gère.
+Dans un premier temps, nous allons nous intéresser au fonctionnement d'un appel système, soit comment le système les détecte et les gère.
 Dans une seconde partie, nous étudierons le multithreading, et de façon plus générale la gestion des threads par NachOS.
 Enfin, dans un troisième chapitre, nous chercherons à mettre en place un système de gestion de mémoire par la pagination.
-Nous étudirons également la gestion de plusieurs processus.
+Nous étudierons également la gestion de plusieurs processus.
 
 
 \newpage
@@ -112,8 +112,7 @@ static Semaphore *SemGetString;
 static void ReadAvail(int arg) { readAvail->V(); }
 static void WriteDone(int arg) { writeDone->V(); }
 
-SynchConsole::SynchConsole(char *readFile, char *writeFile)
-{
+SynchConsole::SynchConsole(char *readFile, char *writeFile){
 	readAvail = new Semaphore("read avail", 0);
 	writeDone = new Semaphore("write done", 0);
 	console = new Console (readFile, writeFile, ReadAvail, WriteDone, 0);
@@ -123,23 +122,20 @@ SynchConsole::SynchConsole(char *readFile, char *writeFile)
 	SemGetString = new Semaphore("GetString", 1);
 }
 
-SynchConsole::~SynchConsole()
-{
+SynchConsole::~SynchConsole(){
 	delete console;
 	delete writeDone;
 	delete readAvail;
 }
 
-void SynchConsole::SynchPutChar(const char ch)
-{
+void SynchConsole::SynchPutChar(const char ch){
 	SemPut->P();
 	console->PutChar (ch);
 	writeDone->P ();	// wait for write to finish
 	SemPut->V();
 }
 
-char SynchConsole::SynchGetChar()
-{
+char SynchConsole::SynchGetChar(){
 	SemGetChar->P();
 	char ch;
 	readAvail->P ();	// wait for character to arrive
@@ -179,8 +175,7 @@ rencontrées dans les phases de test, l'instanciation de SynchConsole a été d�
 else if (!strcmp (*argv, "-sc")){
 	if (argc == 1)
 	    SynchConsoleTest (NULL, NULL);
-	else
-	  {
+	else{
 	      ASSERT (argc > 2);
 	      SynchConsoleTest (*(argv + 1), *(argv + 2));
 	      argCount = 3;
@@ -202,7 +197,7 @@ Cette constante indiquera au handler la nature de l'exception (  \textit{excepti
 \begin{lstlisting}[frame=single]
  #define SC_PutChar		11
 \end{lstlisting}
-Le syscall est ensuite défini dans \textit{start.S} (en assembleur), en nous inspirant des syscall existants.
+Le syscall est ensuite défini dans \textit{start.S} (en assembleur), en s'inspirant des syscall existants.
 
 \begin{lstlisting}[frame=single]
 	.globl PutChar
@@ -237,7 +232,7 @@ if (which == SyscallException){
 }
 \end{lstlisting}
 \newpage
-\subsection{La manipulation de chaine de caractères}
+\subsection{Manipulation de chaînes de caractère}
 La manipulation des string nous permet d'étudier les spécificités de la simulation d'un système d'exploitation par NachOS.
 En effet, nous devons jongler entre 2 espaces mémoire : l'espace MIPS (NachOS) et l'espace Linux.
 \begin{lstlisting}[frame=single]
@@ -311,25 +306,21 @@ case SC_SynchGetString:{
 \textit{Note : MAX\_STRING\_SIZE , SC\_SynchPutString, SC\_SynchGetString sont définis dans system.h }
 \newpage
 
-Enfin, les fonctions SynchPutString et SynchGetString sont définies dans \textit{SynchConsole.cc}, elles seront appelé
+Enfin, les fonctions SynchPutString et SynchGetString sont définies dans \textit{SynchConsole.cc}, elles seront appelées
 par le handler associé.
 
 \begin{lstlisting}[frame=single]
-void SynchConsole::SynchPutString(const char s[])
-{
+void SynchConsole::SynchPutString(const char s[]){
 	SemPut->P();
 	int i;
 	for (i=0;i<MAX_STRING_SIZE && s[i]!='\0';i++){
-		if (s[i]=='\0')
-			return;		// if end of string, quit
-			console->PutChar ((char)s[i]);
-			writeDone->P ();	// wait for write to finish
+		console->PutChar ((char)s[i]);
+		writeDone->P ();	// wait for write to finish
 	}
 	SemPut->V();
 }
 
-void SynchConsole::SynchGetString(char *s, int n)
-{
+void SynchConsole::SynchGetString(char *s, int n){
 	SemGetString->P();
 	char c;
 	int i;
@@ -377,7 +368,7 @@ Par cet exercice autour d'une console synchrone, nous comprenons désormais le m
 \end{figure}
 
 
-On retrouve par ailleurs les mécaniques d'intéruptions vu en RICM3, dans le code de la fonction RaiseException (machine.cc).
+On retrouve par ailleurs les mécaniques d'interruption vues en RICM3, dans le code de la fonction RaiseException (machine.cc).
 On passe en Kernel Mode pour la gestion de l'exception, puis on revient en User Mode.
 
 
@@ -414,8 +405,8 @@ les registres sont initialisés. À ce niveau, le thread a le statut \textit{JUS
 \vspace{0.5cm}
 
 Pour rendre un thread exécutable, un appel à la méthode \textit{Fork} doit être effectué. Cette méthode prend en paramètre un pointeur vers le programme à charger en mémoire, et
-les paramètres de la fonction (pointeur vers une structure contenant les arguments). Le thread ``forké'' partage le même espace mémoire que les autres thread du processus.
-Son statut est mis à jour ( \textit{READY} ). Enfin, il est placé dans la ReadyQueue , le thread a un programme à exécuter.
+les paramètres de la fonction (pointeur vers une structure contenant les arguments). Le thread ``forké'' partage le même espace mémoire que les autres threads du processus.
+Son statut est mis à jour (\textit{READY}). Enfin, il est placé dans la ReadyQueue : le thread a un programme à exécuter.
 
 \newpage
 
@@ -430,37 +421,37 @@ Lors de la mise en place de l'espace d'adressage, le code qui sera exécuté par
 
 NoffMagic est un entier identifiant l'objet contenant le code à éxecuter comme étant de type NachOS.
 La documentation nous apprend par ailleurs que le format d'object NachOS est une simplification du format d'oject UNIX.
-Cet objet contient les segments code ( code exécutable ) et initdata (données initiales), entre autres.
+Cet objet contient les segments code (code exécutable) et initdata (données initiales), entre autres.
 Ces données sont contenues dans un espace d'adressage propre au thread dont la taille est de 4*1024 bits (StackSize défini dans \textit{thread.h}).
-Par ailleurs, en lisant les commentaires, nous apprenons que nous allouons, dans cette simulation, un même espace (thread's private execution stack),
-indépendament du code exécuté par le thread. StackSize doit donc être de taille suffisante, pour nous éviter des erreurs diverses...
+Par ailleurs, en lisant les commentaires, nous apprenons que nous allouons dans cette simulation un même espace à chaque thread (thread's private execution stack),
+indépendament du code exécuté. StackSize doit donc être de taille suffisante pour nous éviter des erreurs diverses.
 \vspace{0.5cm}
 
 Le système divise cet espace en pages, puis il effectue la correspondance entre les adresses physiques et les adresses virtuelles.
 En observant le code fourni dans \textit{addrspace.cc}, nous pouvons comprendre le fonctionnement des fonctions \textit{saveUserState} et \textit{restoreUserState}.
 La fonction \textit{saveUserState} sauvegarde les registres qui sont utilisés par le thread. Ces données sont sauvegardées dans le tableau userRegisters,
 propre à chaque thread. La fonction \textit{restoreUserState} effectue l'opération inverse, en restaurant les registres du thread.
-Les données sont ensuite chargé en mémoire, en utilisant la table des pages créée précédement. Ces dernières étapes sont réalisées dans le constructeur d'AddrSpace.
+Les données sont ensuite chargées en mémoire, en utilisant la table des pages créée précédemment. Ces dernières étapes sont réalisées dans le constructeur d'AddrSpace.
 \vspace{0.5cm}
 
-À ce niveau, les pages virtuelles sont des pages physiques, l'adressage virtuel sera réalisé dans l'étape 4.
+À ce niveau, les pages virtuelles sont des pages physiques ; l'adressage virtuel sera réalisé dans l'étape 4.
 
 \newpage
 \subsection{Thread Utilisateur}
 Cette mécanique autour des threads est utilisée afin de supporter chaque thread utilisateur par un thread NachOS.
 Nous étudions maintenant \textit{StartProcess(..) , progtest.cc }. Après avoir chargé le programme à exécuter en mémoire,
-les registres sont initialisés(\textit{PCReg, NextPCReg, StackReg}, et les autres registres de NachOS) puis le programme est lancé, grâce à la méthode \textit{Run()}.
+les registres sont initialisés (\textit{PCReg, NextPCReg, StackReg}, et les autres registres de NachOS) puis le programme est lancé grâce à la méthode \textit{Run()}.
 Une fois le programme lancé, chaque thread sera ``lancé'' par un appel à la fonction \textit{Fork}. Cette dernière fait appel à \textit{StackAllocate}, qui se chargera
-de l'allocation dans la pile pour le thread à créer. Les paramètres donnés à la fonction \textit{Fork} ( et donc \textit{StackAllocate} ) seront explicités par la suite.
+de l'allocation dans la pile pour le thread à créer. Les paramètres donnés à la fonction \textit{Fork} (et donc \textit{StackAllocate}) seront explicités par la suite.
 \subsubsection{Syscall UserThreadCreate}
 On souhaite maintenant qu’un programme utilisateur puisse créer des threads au niveau utilisateur,
 c’est-à-dire effectuer un appel système \textit{int UserThreadCreate(void f(void *arg), void *arg)}.
-Nous réutilisons donc les mécaniques de l'étape précédante, pour mettre en place le syscall voulu.
+Nous réutilisons donc les mécaniques de l'étape précédente, pour mettre en place le syscall voulu.
 
 Lors de l'appel système UserThreadCreate, nous appelons \textit{do\_UserThreadCreate}.
 Cette première fonction de manipulation des threads utilisateurs est définie dans \textit{userthread.cc}.
-Pour l'instant, nous nous intéréssons uniquement aux opérations liéé à la création d'un thread utilisateur.
-Certaines mécaniques ont du être ajouté pour assurer la cohérence de la page table et le bon fonctionnement d'une dépendance
+Pour l'instant, nous nous intéressons uniquement aux opérations liées à la création d'un thread utilisateur.
+Certaines mécaniques ont du être ajoutées pour assurer la cohérence de la page table et le bon fonctionnement d'une dépendance
 entre deux threads.
 
 \begin{lstlisting}[frame=single]
@@ -506,16 +497,16 @@ return 0;
 \end{lstlisting}
 \newpage
 Le thread user créé, nous devons le lancer. Cette opération est réalisée par la fonction \textit{StartUserThread}.
-Le prototype de la fonction nous impose un unique paramètre. Nous devons passer les paramètres suivant : le pointeur vers la fonction et un pointeur vers les paramètres
+Le prototype de la fonction nous impose un unique paramètre. Nous devons passer les paramètres suivants : le pointeur vers la fonction et un pointeur vers les paramètres
 de la fonction. Nous avons créé une structure regroupant ces paramètres. Nous passerons un pointeur vers cette structure en paramètre à \textit{StartUserThread}.
 \begin{lstlisting}[frame=single]
  typedef struct{
-		int func;
-		int argv;
-	}argThread;
+	int func;
+	int argv;
+}argThread;
 \end{lstlisting}
 
-Toute les instructions exécutées après le Fork sont réalisées par le ``père'' et ont pour but d'assurer
+Toutes les instructions exécutées après le Fork sont réalisées par le ``père'' et ont pour but d'assurer
 le bon fonctionnement d'une dépendance vers le thread créé par le Fork.
 
 \subsubsection{Lancement du thread}
@@ -549,12 +540,11 @@ await->V();
 machine->Run();
 }
 \end{lstlisting}
-
-Voici comment est réalisé l'allocation de la mémoire dans la pile pour notre thread:
+\newpage
+Voici comment est réalisée l'allocation de la mémoire dans la pile pour notre thread:
 \begin{lstlisting}[frame=single]
 int
-AddrSpace::AllocStack ()
-{
+AddrSpace::AllocStack (){
 	SemThread->P();
 	//On veut allouer 4 pages pour chaque thread
 	if((stack->NumClear())<=(NbPagesThread-1)){
@@ -575,12 +565,12 @@ AddrSpace::AllocStack ()
 }
 \end{lstlisting}
 
-On recherche la première page libre, on la marque comme ``occupée''. Un compteur du nombre de thread est incrémenté.
-Ce dernier empeche le syscall Halt d'arrêter NachOS tant qu'un thread utilisateur existe ( et n'a pas terminé ).
+On recherche la première page libre, on la marque comme ``occupée''. Un compteur du nombre de threads est incrémenté.
+Ce dernier empêche le syscall Halt d'arrêter NachOS tant qu'un thread utilisateur existe (et n'a pas terminé).
 
 \subsubsection{Syscall UserThreadExit}
 Le thread utilisateur lancé, nous devons maintenant nous intéresser à son arrêt.
-Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier fait appel à la fonction suivante :
+Un nouvel appel système \textit{UserThreadExit} est créé, ce dernier faisant appel à la fonction suivante :
 
 \begin{lstlisting}[frame=single]
 int do_UserThreadExit(){
@@ -598,46 +588,45 @@ int do_UserThreadExit(){
 \end{lstlisting}
 \newpage
 \subsubsection{Syscall UserThreadJoin}
-Enfin, nous réalisons un dernier appel système, UserThreadJoin afin de forcer un thread à attendre la terminaison d'un thread (autre que lui même ou le thread principal).
-Pour mettre en place ce fonction, nous avons du mettre en place un système de sémaphore dans les précédantes fonctions.
+Enfin, nous réalisons un dernier appel système, \textit{UserThreadJoin}, afin de forcer un thread à attendre la terminaison d'un thread (autre que lui même ou le thread principal).
+Pour mettre en place cette fonction, nous avons dû mettre en place un système de sémaphore dans les précédentes fonctions.
 
-Lors de la création du thread ( \textit{do\_UserThreadCreate(...)}) , nous effectuons plusieurs manipulations  après le Fork. Nous prenons d'abord un sémaphore \textit{await}.
+Lors de la création du thread ( \textit{do\_UserThreadCreate(...)}), nous effectuons plusieurs manipulations après le Fork. Nous prenons d'abord un sémaphore \textit{await}.
 Il sera libéré à la fin de \textit{StartUserThread} juste avant l'appel à \textit{Run()}. Ce sémaphore assure la cohérence de la bitmap. En effet, si un autre thread veut effectuer
 un join vers un thread créé plus tôt, ce dernier doit avoir terminé son allocation dans la pile. Si le thread principal veut créer un autre fils, il devra donc attendre que 
 l'allocation du premier soit terminé. Nous prenons ensuite un second sémaphore \textit{TabSemJoin[t->initStackReg]}.
-Si un thread X fait un join vers ce thread, il devra attendre que le semaphore soit libéré par notre thread lors de l'appel à do\_UserThreadExit() pour prendre le sémaphore
-(on prend ce semaphore dans UserThreadJoin(..) ). Ainsi, on force l'ordre d'exécution ( la dépendance voulue !) , en forcant une attente du thread X sur le semaphore 
+Si un thread X fait un join vers ce thread, il devra attendre que le semaphore soit libéré par notre thread lors de l'appel à do \textit{\_UserThreadExit()} pour prendre le sémaphore
+(on prend ce semaphore dans UserThreadJoin(..)). Ainsi, on force l'ordre d'exécution (la dépendance voulue), en forçant une attente du thread X sur le sémaphore 
 corespondant au thread dont on veut dépendre.
 
 Lors de la terminaison du thread \textit{do\_UserThreadExit()}, le thread libère le sémaphore associé à son thread.
-Ainsi, il débloque d'éventuels thread en attente sur ce sémaphore, des thread qui avaient donc une dépendance vers lui.
-Si il avait lui même une dépendance, et qu'il est dans cette méthode, alors il doit libérer le sémaphore vers cette dépendance,
-permettant donc à d'autres threads en attente sur cette dernière de s'exécuter. Par cette mécanique de sémaphore, nous nous assurons d'avoir autant de P() que de V()
-sur les différents sémaphores, nous évitons donc tout deadlock.
+Ainsi, il débloque d'éventuels threads en attente sur ce sémaphore ; des threads qui avaient donc une dépendance vers lui.
+S'il avait lui-même une dépendance, alors il doit libérer le sémaphore vers cette dépendance afin de permettre à d'autres eventuels threads en attente sur cette dernière de s'exécuter.
+Par cette mécanique de sémaphore, nous nous assurons d'avoir autant de P() que de V() sur les différents sémaphores, évitant ainsi les deadlocks.
  
 \begin{lstlisting}[frame=single]
- int UserThreadJoin(int t){
-if(currentThread->dependance!=-1){
-  printf("Le thread possede deja une dependance\n");
-  return -1;
-}
-if(currentThread->initStackReg==t || t==0){
-  printf("Tentative de dependance vers un thread invalide\n");
-  return -1;
-}
-CheckThreadExistence->P();
+int UserThreadJoin(int t){
+	if(currentThread->dependance!=-1){
+		printf("Le thread possede deja une dependance\n");
+		return -1;
+	}
+	if(currentThread->initStackReg==t || t==0){
+		printf("Tentative de dependance vers un thread invalide\n");
+		return -1;
+	}
+	CheckThreadExistence->P();
 
-if(!currentThread->space->Test(t)){
-  printf("Tentative de dependance vers un thread non existant\n");
-  CheckThreadExistence->V();
-  return -1;
-}
+	if(!currentThread->space->Test(t)){
+		printf("Tentative de dependance vers un thread non existant\n");
+		CheckThreadExistence->V();
+		return -1;
+	}
 
-CheckThreadExistence->V();
+	CheckThreadExistence->V();
 
-currentThread->dependance=t;
-currentThread->space->TabSemJoin[t]->P();
-return 0;
+	currentThread->dependance=t;
+	currentThread->space->TabSemJoin[t]->P();
+	return 0;
 }
 \end{lstlisting}
 \newpage
@@ -691,11 +680,11 @@ Machine halting!
 \begin{figure}[h]
   \begin{center}
     \includegraphics[scale=0.39]{./nachos_join.png}
-   \caption{\label{join} Déroulemet de l'exécution}
+   \caption{\label{join} Déroulement de l'exécution}
   \end{center}
 \end{figure}
 
-On peut par ailleurs noter que cette exécution est englobé dans un thread principal, comme l'a montré notre trace d'exécution.
+On peut par ailleurs noter que cette exécution est englobée dans un thread principal, comme l'a montré notre trace d'exécution.
 \newpage
 \section{Étape 4: NachOS et la pagination }
 \subsection{Adressage Virtuel par une table des pages}
@@ -704,8 +693,8 @@ Nous adressions donc directement la mémoire physique. Nous voulons maintenant a
 La translation vers l'adresse physique est réalisée par l'OS, les programmes utilisateurs fonctionnent quant à eux uniquement avec les adresses virtuelles. NachOS devra donc assurer la traduction des adresses
 virtuelles, si nous voulons pouvoir utiliser un mécanisme de pagination.
 
-Pour rappel, dans un OS ``complexe'', une adresse virtuelle se compose d'une série d'offset qui indiqueront l'index à lire dans le Page Directory, le ou les Page Table, et un dernier offset qui indiquera quand commencent
-nos données dans la Frame (bloc mémoire).
+Pour rappel, dans un OS ``complexe'', une adresse virtuelle se compose d'une série d'offset qui indiqueront l'index à lire dans le Page Directory, le ou les Page Table, et un dernier offset qui indiquera quand
+commencent nos données dans la Frame (bloc mémoire).
 
 \begin{figure}[h]
   \begin{center}
@@ -716,8 +705,8 @@ nos données dans la Frame (bloc mémoire).
 source : http://www.scs.stanford.edu/05au-cs240c/lab/i386/s05\_03.htm
 \vspace{0.5cm}
 
-Dans NachOS, et pour l'instant, ce mécanisme est simplifié, nos adresses virtuelles indiquent seulement un numéro de page, et le déplacement dans la Frame.
-Nous avons donc implémentée la fonction \textit{ReadAtVirtual}, qui à la différence de \textit{ReadAt}, écrit dans l'espace d'adressage virtuel :
+Dans NachOS, ce mécanisme est pour l'instant simplifié. Nos adresses virtuelles indiquent seulement un numéro de page et le déplacement dans la Frame.
+Nous avons donc implémenté la fonction \textit{ReadAtVirtual}, qui, à la différence de \textit{ReadAt}, écrit dans l'espace d'adressage virtuel :
 
 \begin{lstlisting}[frame=single]
  static void ReadAtVirtual(OpenFile *executable, int virtualaddr, int numBytes, int position, TranslationEntry *pageTable,unsigned numPages){
@@ -745,41 +734,40 @@ Nous avons donc implémentée la fonction \textit{ReadAtVirtual}, qui à la diff
 }
 \end{lstlisting}
 
+\newpage
 Nous vérifions dans un premier temps que l'adresse à traduire est ``valide'' : positive et inférieure à la valeur maximale adressée par la table.
-On remarque que l'on écrit en mémoire par bloc de 4 octets ( un word , 32 bits ) et l'utilisation d'un buffer ( into ). On note par ailleurs une sauvegarde puis une restauration
+On remarque que l'on écrit en mémoire par bloc de 4 octets (un word ou 32 bits) et que l'on utilise un buffer (into). On note par ailleurs une sauvegarde puis une restauration
 des informations de la page table.
 
-On remplace ensuite les appels à ReadAt par ReadAtVirtual, dans le constructeur d'AddrSpace :
+On remplace ensuite les appels à ReadAt par ReadAtVirtual dans le constructeur d'AddrSpace :
 
 \begin{lstlisting}[frame=single]
 [...]
-    if (noffH.code.size > 0)
-      {
-	  DEBUG ('a', "Initializing code segment, at 0x%x, size %d\n",
-		 noffH.code.virtualAddr, noffH.code.size);
+	if (noffH.code.size > 0){
+		DEBUG ('a', "Initializing code segment, at 0x%x, size %d\n",
+			noffH.code.virtualAddr, noffH.code.size);
 	#ifndef CHANGED
-	  executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
+		executable->ReadAt (&(machine->mainMemory[noffH.code.virtualAddr]),
 			      noffH.code.size, noffH.code.inFileAddr);
 	#else
 	ReadAtVirtual(executable, noffH.code.virtualAddr, noffH.code.size, noffH.code.inFileAddr, pageTable, numPages);
 	#endif //CHANGED
-      }
-    if (noffH.initData.size > 0)
-      {
-	  DEBUG ('a', "Initializing data segment, at 0x%x, size %d\n",
-		 noffH.initData.virtualAddr, noffH.initData.size);
+	}
+	if (noffH.initData.size > 0){
+		DEBUG ('a', "Initializing data segment, at 0x%x, size %d\n",
+			noffH.initData.virtualAddr, noffH.initData.size);
 	#ifndef CHANGED
-	  executable->ReadAt (&
-			      (machine->mainMemory
-			       [noffH.initData.virtualAddr]),
-			      noffH.initData.size, noffH.initData.inFileAddr);
+		executable->ReadAt (&
+			(machine->mainMemory
+			[noffH.initData.virtualAddr]),
+			noffH.initData.size, noffH.initData.inFileAddr);
 	#else
 	ReadAtVirtual(executable, noffH.initData.virtualAddr, noffH.initData.size, noffH.initData.inFileAddr, pageTable, numPages);
 	#endif //CHANGED
-      }
+}
 \end{lstlisting}
 
-En modifiant la page table pour que la page i soit mappé sur la page physique i+1, voici ce que nous observons au debugger :
+En modifiant la page table pour que la page \textit{i} soit mappée sur la page physique \textit{i+1}, voici ce que nous observons au debugueur :
 
 \begin{verbatim}
   Avec l'adresse physique placee a i:
@@ -802,7 +790,7 @@ Conclusion: l'adresse physique est donc décalée de 0x80. Cela correspond en ba
 Plus généralement, il est utile d’encapsuler l’allocation des pages physiques aux pages virtuelles dans une
 classe spéciale FrameProvider. C’est alors à cette classe de remettre à zéro les pages fournies, et
 non plus au constructeur de AddrSpace. Nous allons donc nous atteler à la mise en place de cette classe.
-Cette dernière utilisera une bitmap  pour savoir quelle frames sont disponibles. Elle se chargera de les initialiser, puis de les libérer le moment venu.
+Cette dernière utilisera une bitmap pour savoir quelles frames sont disponibles. Elle se chargera de les initialiser, puis de les libérer le moment venu.
 
 \begin{lstlisting}[frame=single]
 #include "frameprovider.h"
@@ -811,8 +799,7 @@ Cette dernière utilisera une bitmap  pour savoir quelle frames sont disponibles
 
 static Semaphore *semFrame = new Semaphore("semFrame",1);
 
- FrameProvider::FrameProvider(int NumPages)
-{
+ FrameProvider::FrameProvider(int NumPages){
 	phyMemBitmap = new BitMap(NumPages);
 	BitmapSize = NumPages;
 }
@@ -821,9 +808,7 @@ FrameProvider::~FrameProvider(){
 	delete phyMemBitmap;
 }
 
-int
-FrameProvider::GetEmptyFrame()
-{
+int FrameProvider::GetEmptyFrame(){
 	semFrame->P();
 	if((phyMemBitmap->NumClear())<=0){
 		printf("Stack overflow\n");
@@ -836,9 +821,7 @@ FrameProvider::GetEmptyFrame()
 	return tmp;
 }
 
-void
-FrameProvider::ReleaseFrame(int numFrame)
-{
+void FrameProvider::ReleaseFrame(int numFrame){
 	if(!phyMemBitmap->Test(numFrame)){
 		printf("Error numFrame %d\n",numFrame);
 		return;
@@ -847,9 +830,7 @@ FrameProvider::ReleaseFrame(int numFrame)
 	phyMemBitmap->Clear(numFrame);
 }
 
-int
-FrameProvider::NumAvailFrame()
-{
+int FrameProvider::NumAvailFrame(){
 	// maj nb frame dispo
 	return phyMemBitmap->NumClear();
 }
@@ -858,9 +839,8 @@ FrameProvider::NumAvailFrame()
 \newpage
 La classe AddrSpace s'en retrouve donc modifiée, puisque ce n'est plus à elle de gérer l'allocation des Frames.
 \begin{lstlisting}[frame=single]
- pageTable = new TranslationEntry[numPages];
-    for (i = 0; i < numPages; i++)
-      {
+pageTable = new TranslationEntry[numPages];
+for (i = 0; i < numPages; i++){
 	  pageTable[i].virtualPage = i;	
 	#ifndef CHANGED
 	  pageTable[i].physicalPage = i;// virtual page # = phys page #
@@ -874,10 +854,10 @@ La classe AddrSpace s'en retrouve donc modifiée, puisque ce n'est plus à elle 
 	  // if the code segment was entirely on 
 	  // a separate page, we could set its 
 	  // pages to be read-only
-      }
+}
 \end{lstlisting}
 
-Le Frame Provider ne doit pas être lié à un processus, mais à l'OS. Aussi, nous l'instancions dans \textit{Initialize  ( fichier system.cc )}
+Le Frame Provider ne doit pas être lié à un processus, mais à l'OS. Aussi, nous l'instancions dans \textit{Initialize (fichier system.cc)}
 
 \begin{lstlisting}[frame=single]
  #ifdef CHANGED
@@ -889,8 +869,7 @@ Le Frame Provider ne doit pas être lié à un processus, mais à l'OS. Aussi, n
 Enfin, lors de la terminaison d'un processus et la supression de son espace mémoire associé, nous libérons donc les frames occupées par chaque page :
 
 \begin{lstlisting}[frame=single]
- AddrSpace::~AddrSpace ()
-{
+ AddrSpace::~AddrSpace (){
 	#ifdef CHANGED
 	unsigned i;
 	for(i=0;i<divRoundUp(UserStackSize,PageSize);i++){
@@ -902,16 +881,16 @@ Enfin, lors de la terminaison d'un processus et la supression de son espace mém
 	}
 	delete stack;
 	#endif //CHANGED
-  delete [] pageTable;
+delete [] pageTable;
 }
 \end{lstlisting}
 \newpage
 \subsection{Le multi processus}
-Nous souhaitons maintenant pouvoir lancer simultanément plusieurs processus lançant eux même plusieurs thread.
+Nous souhaitons maintenant pouvoir lancer simultanément plusieurs processus lançant eux même plusieurs threads.
 Cela implique donc que chaque processus doit avoir un espace mémoire isolé des autres, dans lequel ses threads se partagent l'espace.
 
-Afin de réaliser cela, un syscall ForkExec est créé, il prend en paramètre le nom du programme a exécuter. Ce syscall se chargera de créer un espace mémoire propre au processus
-et de ratacher un thread principal à cet espace mémoire avant se forker. Les mécaniques habituelles des syscall précédants sont mises en oeuvre. Voici le ``case''  au niveau de L'ExceptionHandler :
+Afin de réaliser cela, un syscall ForkExec est créé. Il prend en paramètre le nom du programme à exécuter. Ce syscall se chargera de créer un espace mémoire propre au processus
+et de rattacher un thread principal à cet espace mémoire avant de forker. Les mécaniques habituelles des syscall précédents sont mises en oeuvre. Voici le ``case''  au niveau de L'ExceptionHandler :
 
 \begin{lstlisting}[frame=single]
 case SC_ForkExec:{
@@ -923,6 +902,7 @@ case SC_ForkExec:{
 	machine->WriteRegister (2,res);
 	delete buffer;
 	break;
+}
 \end{lstlisting}
 
 Lors du syscall, nous appelons la fonction \textit{ForkExec} qui va créer l'espace mémoire pour notre nouveau processus et créer le thread principal associé au programme à lancer
@@ -933,8 +913,7 @@ dans ce nouvel espace mémoire.
 	OpenFile *executable = fileSystem->Open (s);
 	AddrSpace *space;
 
-	if (executable == NULL)
-	{
+	if (executable == NULL)	{
 		printf ("Unable to open file %s\n", s);
 		return -1;
 	}
@@ -969,32 +948,30 @@ On peut noter un appel à la fonction \textit{MajNbProcess}, qui maintient un co
 }
 \end{lstlisting}
 \newpage
-En effet, au même titre que nous voulions arrêter la machine lorsque tout les thread s'étaient terminés, nous voulons généraliser cette politique aux processus.
+En effet, comme nous arrêtons la machine lorsque tous les thread s'étaient terminés, nous voulons généraliser cette politique aux processus.
 Pour cela, le syscall Exit est légèrement modifié :
 
 \begin{lstlisting}[frame=single]
- 			case SC_Exit:{
-				currentThread->space->CheckLastThread();
-				MajNbProcess(-1);
-				delete currentThread->space;
-				if(GetNbProcess()>=0){
-					currentThread->Finish();
-				}
-				else{
-					interrupt->Halt ();
-				}
-				break;
-			}
+case SC_Exit:{
+	currentThread->space->CheckLastThread();
+	MajNbProcess(-1);
+	delete currentThread->space;
+	if(GetNbProcess()>=0){
+		currentThread->Finish();
+	}
+	else{
+		interrupt->Halt ();
+	}
+	break;
+}
 \end{lstlisting}
 
 \subsection{Test du multi-processus}
 \begin{lstlisting}[frame=single]
  #include "syscall.h"
-
 #define NbProcess 12
 
-int main()
-{
+int main(){
 	int i;
 	for(i=0;i<NbProcess;i++){
 		ForkExec("massthread");
@@ -1003,9 +980,7 @@ int main()
 }
 
 #massthread...
-
 #include "syscall.h"
-
 #define NbThread 12
 
 void thread(int *i){
@@ -1015,28 +990,17 @@ void thread(int *i){
 		SynchPutInt(i[0]);
 		PutChar('\n');
 	}
-	else{
-		SynchPutString("Thread initial\n");
-	}	
-	//Calcul sale pour "ralentir" les threads
+	else SynchPutString("Thread initial\n");
 	int a=1001;
 	int j;
 	for(j=0;j<2000;j++){
-		if(a%2){
-			a=a*2;
-		}
-		else{
-			a=a/2;
-		}
+		if(a%2) a=a*2;
+		else a=a/2;
 	}
 	UserThreadExit();
 }
 
-
-
-
-int main()
-{
+int main(){
 	int i,tmp,param[NbThread+1];
 	param[0]=-1;
 	tmp=UserThreadCreate((void (*)(void *))thread,(void *)(param));
@@ -1048,7 +1012,7 @@ int main()
 	Exit(0);
 }
 \end{lstlisting}
-
+\newpage
 Nous créons donc 12 processus lançant chacun 12 threads. Voici l'affichage :
 
 \begin{verbatim}
@@ -1078,12 +1042,13 @@ Machine halting!
 
 \newpage
 \section{Conclusion}
-Ce projet nous aura permit de voir les notions principales en oeuvre dans les systèmes actuels : le multi processus, et le multi thread. Nous avons put par ailleurs expérimenter un système de pagination, certe basique, mais néenmoins fonctionnel.
-Ces notions sont des piliers dans les systèmes d'exploitation actuels, il est important d'en comprendre le fonctionnement. Nous avous eut à faire beaucoup d'introspections sur notre code au fur et à mesure du projet, certaines notions
-mal comprises dans un premier temps se révellant par la suite cruciales.
+Ce projet nous aura permis de voir les notions principales en oeuvre dans les systèmes actuels : le multi processus, et le multi thread.
+Nous avons pu par ailleurs expérimenter un système de pagination, certes basique, mais néanmoins fonctionnel.
+Ces notions sont des piliers dans les systèmes d'exploitation actuels ; il est important d'en comprendre le bon fonctionnement.
+Nous avous eu à faire beaucoup d'introspections sur notre code au fur et à mesure du projet, certaines notions ayant été mal comprises dans un premier temps et se révélant par la suite cruciales.
 
-Par ailleurs, il était important que chaque membre du groupe comprenne le code écrit par un autre, aussi nous avons réalisés au cours du projet plusieurs bilans,
-le rapport a été écrit avant autant de clareté que possible afin qu'aucun point ne soit laissé dans l'ombre, sans pour autant se perdre dans des détails d'implémentations propres à NachOS.
+Par ailleurs, il était important que chaque membre du groupe comprenne le code écrit par un autre, aussi avons-nous réalisé au cours du projet plusieurs bilans,
+Le rapport a été écrit avec autant de clarté que possible afin qu'aucun point ne soit laissé dans l'ombre, sans pour autant se perdre dans des détails d'implémentation propres à NachOS.
 
 \end{document}
 
