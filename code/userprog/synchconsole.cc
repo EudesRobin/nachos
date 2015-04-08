@@ -56,10 +56,8 @@ void SynchConsole::SynchPutString(const char s[])
 	SemPut->P();
 	int i;
 	for (i=0;i<MAX_STRING_SIZE && s[i]!='\0';i++){
-		if (s[i]=='\0')
-			return;		// if end of string, quit
-			console->PutChar ((char)s[i]);
-			writeDone->P ();	// wait for write to finish
+		console->PutChar ((char)s[i]);
+		writeDone->P ();	// wait for write to finish
 	}
 	SemPut->V();
 }
